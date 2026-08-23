@@ -1,0 +1,601 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+		8C8CB8B51BB449D43137DE44 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		BD2FE93ABDBAA8F0F5BEA8AA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C8CB8B51BB449D43137DE44 /* AppDelegate.swift */; };
+		A9F640664413ED3D35D47CB3 /* MacLockApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacLockApp.swift; sourceTree = "<group>"; };
+		B8CA80AD87D65D6BE28FCB9C /* MacLockApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F640664413ED3D35D47CB3 /* MacLockApp.swift */; };
+		5F3D734EDC7602B8C3D16EB6 /* ProcessRole.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessRole.swift; sourceTree = "<group>"; };
+		9016334046FD06306F1C7B85 /* ProcessRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F3D734EDC7602B8C3D16EB6 /* ProcessRole.swift */; };
+		4E54E5C23A242869239435EC /* GateSecretsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GateSecretsStore.swift; sourceTree = "<group>"; };
+		8311BEACA5B1B932AC8C6F8E /* GateSecretsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E54E5C23A242869239435EC /* GateSecretsStore.swift */; };
+		6D0F23150736C234D2448502 /* KeychainClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainClient.swift; sourceTree = "<group>"; };
+		E13D35879AD001620387AF3B /* KeychainClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D0F23150736C234D2448502 /* KeychainClient.swift */; };
+		C273CA0559C5FA9C7C489A1A /* PasswordHasher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordHasher.swift; sourceTree = "<group>"; };
+		987F99081DC9E814A9ADC777 /* PasswordHasher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C273CA0559C5FA9C7C489A1A /* PasswordHasher.swift */; };
+		A48579AEA5E412BCC6C4F811 /* PasswordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordStore.swift; sourceTree = "<group>"; };
+		EB47B9348A7CCBA8BFB694BF /* PasswordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A48579AEA5E412BCC6C4F811 /* PasswordStore.swift */; };
+		7F15B52D50BF6EBF67793559 /* PasswordVerifyResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordVerifyResult.swift; sourceTree = "<group>"; };
+		A8C5C01C3A0614C276FF4E15 /* PasswordVerifyResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F15B52D50BF6EBF67793559 /* PasswordVerifyResult.swift */; };
+		6E54BD755DD9EB24373BC848 /* RateLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateLimiter.swift; sourceTree = "<group>"; };
+		3BDAAA6CCEE73900566A8C7A /* RateLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E54BD755DD9EB24373BC848 /* RateLimiter.swift */; };
+		8E50FD5F4C6F0890C2EAE360 /* RecoveryKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryKeyStore.swift; sourceTree = "<group>"; };
+		A6BADBD837ED87CC2348C9D2 /* RecoveryKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E50FD5F4C6F0890C2EAE360 /* RecoveryKeyStore.swift */; };
+		23F416E09328A0507A6DEDF5 /* EscapeChord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EscapeChord.swift; sourceTree = "<group>"; };
+		73D122E714B41C3135C511B3 /* EscapeChord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23F416E09328A0507A6DEDF5 /* EscapeChord.swift */; };
+		FE8A3746DCCD50106A9A2864 /* EventTapController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTapController.swift; sourceTree = "<group>"; };
+		A9E34524F956A3B8D5D9378F /* EventTapController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE8A3746DCCD50106A9A2864 /* EventTapController.swift */; };
+		F752442BD3CB3C3BCF895B26 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
+		3E5893199E09BF66C9AD26FA /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F752442BD3CB3C3BCF895B26 /* OnboardingFlow.swift */; };
+		200CD2142B928E9D1FEDA57D /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		BC3C6F0AB75E38A2B9743767 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200CD2142B928E9D1FEDA57D /* OnboardingView.swift */; };
+		D6275B8D67D67EB9668FE350 /* AuxiliaryShieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuxiliaryShieldView.swift; sourceTree = "<group>"; };
+		CF18E526D4E92E73C73CD5D0 /* AuxiliaryShieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6275B8D67D67EB9668FE350 /* AuxiliaryShieldView.swift */; };
+		72AD2BCA9D63460B0BE1A554 /* OverlayWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowManager.swift; sourceTree = "<group>"; };
+		DE0502C48412F02805341053 /* OverlayWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AD2BCA9D63460B0BE1A554 /* OverlayWindowManager.swift */; };
+		FA05B5B02E979A90A960FA16 /* PasswordPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordPanelController.swift; sourceTree = "<group>"; };
+		F91F098B4CD11FC6F08A82C8 /* PasswordPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA05B5B02E979A90A960FA16 /* PasswordPanelController.swift */; };
+		F07BC58B7DDE48945641DDFF /* ScreenListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenListing.swift; sourceTree = "<group>"; };
+		EB8F4B2CD142499BB3BBB5F7 /* ScreenListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = F07BC58B7DDE48945641DDFF /* ScreenListing.swift */; };
+		2E928D3A5D0B2F664513E4A2 /* ShieldWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShieldWindow.swift; sourceTree = "<group>"; };
+		1565A5C7465774553BBEF377 /* ShieldWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E928D3A5D0B2F664513E4A2 /* ShieldWindow.swift */; };
+		6A42BCA934AB5450AD7FEE5E /* CaptureDeviceCataloging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureDeviceCataloging.swift; sourceTree = "<group>"; };
+		1A1AC2B1AA0BBEEDCFAC4709 /* CaptureDeviceCataloging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A42BCA934AB5450AD7FEE5E /* CaptureDeviceCataloging.swift */; };
+		0AAEF4C531A650261C4542C0 /* ContinuityDeviceMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuityDeviceMatcher.swift; sourceTree = "<group>"; };
+		CBC41C779E459FACCDCD3027 /* ContinuityDeviceMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAEF4C531A650261C4542C0 /* ContinuityDeviceMatcher.swift */; };
+		6415856468C8AE77DAE8C94C /* PresenceEvidence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceEvidence.swift; sourceTree = "<group>"; };
+		24A63F6F6A9D6DB31F557914 /* PresenceEvidence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6415856468C8AE77DAE8C94C /* PresenceEvidence.swift */; };
+		49DC1AECD595F59E1EB059D2 /* PresenceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceMonitor.swift; sourceTree = "<group>"; };
+		919CDD8DFC75BE69B84AC62C /* PresenceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DC1AECD595F59E1EB059D2 /* PresenceMonitor.swift */; };
+		684B480B97FCC265A27DE594 /* GateEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GateEffects.swift; sourceTree = "<group>"; };
+		6EAAE5AFFD2C6DBDF7AAAC97 /* GateEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684B480B97FCC265A27DE594 /* GateEffects.swift */; };
+		DDF02EC45FC2BD4B8BDC1F7D /* ScreenLockMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenLockMonitor.swift; sourceTree = "<group>"; };
+		FE4B17EDDA7CC9CAA908CBEF /* ScreenLockMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF02EC45FC2BD4B8BDC1F7D /* ScreenLockMonitor.swift */; };
+		F4AA91B835641B450AD76565 /* SessionEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionEvent.swift; sourceTree = "<group>"; };
+		7AB6C9B8BA488B805020487F /* SessionEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AA91B835641B450AD76565 /* SessionEvent.swift */; };
+		AE9BFD7900686EB263545ACD /* SessionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionGate.swift; sourceTree = "<group>"; };
+		D10062331D9294CCD95D47E9 /* SessionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE9BFD7900686EB263545ACD /* SessionGate.swift */; };
+		80601537503F0838319365EB /* ArmDisarmController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArmDisarmController.swift; sourceTree = "<group>"; };
+		F74D33EE97E755C150DD23A8 /* ArmDisarmController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80601537503F0838319365EB /* ArmDisarmController.swift */; };
+		F5CAA84CDDD1D02029D95F77 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		8073BF7E0716D2A0A16A3E2F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5CAA84CDDD1D02029D95F77 /* SettingsView.swift */; };
+		5F7CBE44409CF484B02628A0 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
+		287723A92652D21F22247F83 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7CBE44409CF484B02628A0 /* StatusItemController.swift */; };
+		A2F9E4918D3CC3CDD4A36271 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		91112EF84367382AA3A7F0A3 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F9E4918D3CC3CDD4A36271 /* Logger.swift */; };
+		42B97E4A1387969CA187D933 /* LoginItemService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemService.swift; sourceTree = "<group>"; };
+		3A2DFE6F5E9B94B326C8163E /* LoginItemService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42B97E4A1387969CA187D933 /* LoginItemService.swift */; };
+		A70946036DEB9E05F126CB21 /* Permissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Permissions.swift; sourceTree = "<group>"; };
+		91D94DA860BD46867488F5C6 /* Permissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A70946036DEB9E05F126CB21 /* Permissions.swift */; };
+		5E4061AB19A374BCA0B9BC10 /* FakeCaptureCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCaptureCatalog.swift; sourceTree = "<group>"; };
+		26F959CB8621F2D7EDC30482 /* FakeCaptureCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E4061AB19A374BCA0B9BC10 /* FakeCaptureCatalog.swift */; };
+		BF072A604346F5541150032A /* FakeClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeClock.swift; sourceTree = "<group>"; };
+		666C668775BB54486BA27D02 /* FakeClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF072A604346F5541150032A /* FakeClock.swift */; };
+		417F7A1D33F98116610FCB8C /* FakeKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeKeychain.swift; sourceTree = "<group>"; };
+		BE0FB0FD82DC7E9208765A7D /* FakeKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417F7A1D33F98116610FCB8C /* FakeKeychain.swift */; };
+		13E9F323010887932AA5FE40 /* FakeScreenListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeScreenListing.swift; sourceTree = "<group>"; };
+		198306E6FDDFD79A18298222 /* FakeScreenListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E9F323010887932AA5FE40 /* FakeScreenListing.swift */; };
+		E8BA7C6934B326B0B00E3384 /* GateSecretsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GateSecretsStoreTests.swift; sourceTree = "<group>"; };
+		684DFCF013CDD24FD7EA4AED /* GateSecretsStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8BA7C6934B326B0B00E3384 /* GateSecretsStoreTests.swift */; };
+		9A781C908A0DD1B382DE1B18 /* OverlayWindowManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowManagerTests.swift; sourceTree = "<group>"; };
+		06866951A2001D60A8E1DDA9 /* OverlayWindowManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A781C908A0DD1B382DE1B18 /* OverlayWindowManagerTests.swift */; };
+		CAC78D0DE9029CFA5F9C0A12 /* PasswordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordStoreTests.swift; sourceTree = "<group>"; };
+		A77B3CA1941C1907BDB44D13 /* PasswordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC78D0DE9029CFA5F9C0A12 /* PasswordStoreTests.swift */; };
+		51AFA6C1ECB3100D6C834ABB /* PresenceClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceClassifierTests.swift; sourceTree = "<group>"; };
+		D65BA25DB1F4EDCD3E4D28F8 /* PresenceClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51AFA6C1ECB3100D6C834ABB /* PresenceClassifierTests.swift */; };
+		8CA0D8A6A06F9D63385FBF72 /* PresenceMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceMonitorTests.swift; sourceTree = "<group>"; };
+		50B350A3A1B65FCFFFE19471 /* PresenceMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA0D8A6A06F9D63385FBF72 /* PresenceMonitorTests.swift */; };
+		71B077C53A32CD665D06226B /* RateLimiterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateLimiterTests.swift; sourceTree = "<group>"; };
+		8BBFCD45C9A0F8F28932FD62 /* RateLimiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B077C53A32CD665D06226B /* RateLimiterTests.swift */; };
+		85642C7C2A90F56C2765E43B /* SessionGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionGateTests.swift; sourceTree = "<group>"; };
+		1240356A92F0C1D5B2B3F509 /* SessionGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85642C7C2A90F56C2765E43B /* SessionGateTests.swift */; };
+		12F1C9823B7D241C34392D7F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8D112346025269318A39D73A /* MacLock.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacLock.entitlements; sourceTree = "<group>"; };
+		31622F5DB5AF44890238D799 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DB249DB9D0FF833647E29581 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 31622F5DB5AF44890238D799 /* Assets.xcassets */; };
+		6255C914FFE9407A7CF4917E /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		2401A7749FE53E0F36AF7F3C /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = zh-Hans.lproj/Localizable.strings; sourceTree = "<group>"; };
+		C2FD79F5C277ECA0F1415A4D /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				6255C914FFE9407A7CF4917E /* Localizable.strings */,
+				2401A7749FE53E0F36AF7F3C /* Localizable.strings */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		1178028A773C8FD1FE4358FD /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = C2FD79F5C277ECA0F1415A4D /* Localizable.strings */; };
+		C50888324439B60AEA99431A /* app.maclock.agent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = app.maclock.agent.plist; sourceTree = "<group>"; };
+		2C1E3B6EB289E2C73F9698D0 /* app.maclock.agent.plist in Resources */ = {isa = PBXBuildFile; fileRef = C50888324439B60AEA99431A /* app.maclock.agent.plist */; };
+		84337AD8D27FCD69AF2C4FC2 /* MacLock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacLock.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DFDED23FA58339F9273F6C84 /* MacLockTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacLockTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D1D0524B025E57AFFF263442 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				8C8CB8B51BB449D43137DE44 /* AppDelegate.swift */,
+				A9F640664413ED3D35D47CB3 /* MacLockApp.swift */,
+				5F3D734EDC7602B8C3D16EB6 /* ProcessRole.swift */,
+				12F1C9823B7D241C34392D7F /* Info.plist */,
+				8D112346025269318A39D73A /* MacLock.entitlements */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		0C4D2107A352132CBC4AA9AE /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				4E54E5C23A242869239435EC /* GateSecretsStore.swift */,
+				6D0F23150736C234D2448502 /* KeychainClient.swift */,
+				C273CA0559C5FA9C7C489A1A /* PasswordHasher.swift */,
+				A48579AEA5E412BCC6C4F811 /* PasswordStore.swift */,
+				7F15B52D50BF6EBF67793559 /* PasswordVerifyResult.swift */,
+				6E54BD755DD9EB24373BC848 /* RateLimiter.swift */,
+				8E50FD5F4C6F0890C2EAE360 /* RecoveryKeyStore.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		AAD1C13C59AC3289473E38DF /* Input */ = {
+			isa = PBXGroup;
+			children = (
+				23F416E09328A0507A6DEDF5 /* EscapeChord.swift */,
+				FE8A3746DCCD50106A9A2864 /* EventTapController.swift */,
+			);
+			path = Input;
+			sourceTree = "<group>";
+		};
+		C3170A6937369DA86ACEBD3B /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				F752442BD3CB3C3BCF895B26 /* OnboardingFlow.swift */,
+				200CD2142B928E9D1FEDA57D /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		3A8E971203CEB96F302A11A7 /* Overlay */ = {
+			isa = PBXGroup;
+			children = (
+				D6275B8D67D67EB9668FE350 /* AuxiliaryShieldView.swift */,
+				72AD2BCA9D63460B0BE1A554 /* OverlayWindowManager.swift */,
+				FA05B5B02E979A90A960FA16 /* PasswordPanelController.swift */,
+				F07BC58B7DDE48945641DDFF /* ScreenListing.swift */,
+				2E928D3A5D0B2F664513E4A2 /* ShieldWindow.swift */,
+			);
+			path = Overlay;
+			sourceTree = "<group>";
+		};
+		F587FA4C610F7F3687ECF025 /* Presence */ = {
+			isa = PBXGroup;
+			children = (
+				6A42BCA934AB5450AD7FEE5E /* CaptureDeviceCataloging.swift */,
+				0AAEF4C531A650261C4542C0 /* ContinuityDeviceMatcher.swift */,
+				6415856468C8AE77DAE8C94C /* PresenceEvidence.swift */,
+				49DC1AECD595F59E1EB059D2 /* PresenceMonitor.swift */,
+			);
+			path = Presence;
+			sourceTree = "<group>";
+		};
+		69BDB715740452976917A319 /* Session */ = {
+			isa = PBXGroup;
+			children = (
+				684B480B97FCC265A27DE594 /* GateEffects.swift */,
+				DDF02EC45FC2BD4B8BDC1F7D /* ScreenLockMonitor.swift */,
+				F4AA91B835641B450AD76565 /* SessionEvent.swift */,
+				AE9BFD7900686EB263545ACD /* SessionGate.swift */,
+			);
+			path = Session;
+			sourceTree = "<group>";
+		};
+		D0CA17BBA4161446FC3D6EE6 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				80601537503F0838319365EB /* ArmDisarmController.swift */,
+				F5CAA84CDDD1D02029D95F77 /* SettingsView.swift */,
+				5F7CBE44409CF484B02628A0 /* StatusItemController.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		F7ED0AE08FBB92027261B793 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				A2F9E4918D3CC3CDD4A36271 /* Logger.swift */,
+				42B97E4A1387969CA187D933 /* LoginItemService.swift */,
+				A70946036DEB9E05F126CB21 /* Permissions.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		887A6F90336FF23D95C3914B /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				31622F5DB5AF44890238D799 /* Assets.xcassets */,
+				C2FD79F5C277ECA0F1415A4D /* Localizable.strings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A074771967AE5EC687F7052F /* LaunchAgents */ = {
+			isa = PBXGroup;
+			children = (
+				C50888324439B60AEA99431A /* app.maclock.agent.plist */,
+			);
+			path = LaunchAgents;
+			sourceTree = "<group>";
+		};
+		D7EB1F216C1904DDE34425AB /* Fakes */ = {
+			isa = PBXGroup;
+			children = (
+				5E4061AB19A374BCA0B9BC10 /* FakeCaptureCatalog.swift */,
+				BF072A604346F5541150032A /* FakeClock.swift */,
+				417F7A1D33F98116610FCB8C /* FakeKeychain.swift */,
+				13E9F323010887932AA5FE40 /* FakeScreenListing.swift */,
+			);
+			path = Fakes;
+			sourceTree = "<group>";
+		};
+		A0937472EE5878FA82CB0F7E /* MacLockTests */ = {
+			isa = PBXGroup;
+			children = (
+				E8BA7C6934B326B0B00E3384 /* GateSecretsStoreTests.swift */,
+				9A781C908A0DD1B382DE1B18 /* OverlayWindowManagerTests.swift */,
+				CAC78D0DE9029CFA5F9C0A12 /* PasswordStoreTests.swift */,
+				51AFA6C1ECB3100D6C834ABB /* PresenceClassifierTests.swift */,
+				8CA0D8A6A06F9D63385FBF72 /* PresenceMonitorTests.swift */,
+				71B077C53A32CD665D06226B /* RateLimiterTests.swift */,
+				85642C7C2A90F56C2765E43B /* SessionGateTests.swift */,
+				D7EB1F216C1904DDE34425AB /* Fakes */,
+			);
+			path = MacLockTests;
+			sourceTree = "<group>";
+		};
+		8114BFE237D367C2C8D977D5 /* MacLock */ = {
+			isa = PBXGroup;
+			children = (
+				D1D0524B025E57AFFF263442 /* App */,
+				0C4D2107A352132CBC4AA9AE /* Auth */,
+				AAD1C13C59AC3289473E38DF /* Input */,
+				A074771967AE5EC687F7052F /* LaunchAgents */,
+				C3170A6937369DA86ACEBD3B /* Onboarding */,
+				3A8E971203CEB96F302A11A7 /* Overlay */,
+				F587FA4C610F7F3687ECF025 /* Presence */,
+				887A6F90336FF23D95C3914B /* Resources */,
+				69BDB715740452976917A319 /* Session */,
+				D0CA17BBA4161446FC3D6EE6 /* Settings */,
+				F7ED0AE08FBB92027261B793 /* Support */,
+			);
+			path = MacLock;
+			sourceTree = "<group>";
+		};
+		547D009064F7C3F13BEF3460 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				84337AD8D27FCD69AF2C4FC2 /* MacLock.app */,
+				DFDED23FA58339F9273F6C84 /* MacLockTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		518DA81DB9B99529C0C0AEBE = {
+			isa = PBXGroup;
+			children = (
+				8114BFE237D367C2C8D977D5 /* MacLock */,
+				A0937472EE5878FA82CB0F7E /* MacLockTests */,
+				547D009064F7C3F13BEF3460 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2FB286088BD0BF8AE88E0D78 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BD2FE93ABDBAA8F0F5BEA8AA /* AppDelegate.swift in Sources */,
+				B8CA80AD87D65D6BE28FCB9C /* MacLockApp.swift in Sources */,
+				9016334046FD06306F1C7B85 /* ProcessRole.swift in Sources */,
+				8311BEACA5B1B932AC8C6F8E /* GateSecretsStore.swift in Sources */,
+				E13D35879AD001620387AF3B /* KeychainClient.swift in Sources */,
+				987F99081DC9E814A9ADC777 /* PasswordHasher.swift in Sources */,
+				EB47B9348A7CCBA8BFB694BF /* PasswordStore.swift in Sources */,
+				A8C5C01C3A0614C276FF4E15 /* PasswordVerifyResult.swift in Sources */,
+				3BDAAA6CCEE73900566A8C7A /* RateLimiter.swift in Sources */,
+				A6BADBD837ED87CC2348C9D2 /* RecoveryKeyStore.swift in Sources */,
+				73D122E714B41C3135C511B3 /* EscapeChord.swift in Sources */,
+				A9E34524F956A3B8D5D9378F /* EventTapController.swift in Sources */,
+				3E5893199E09BF66C9AD26FA /* OnboardingFlow.swift in Sources */,
+				BC3C6F0AB75E38A2B9743767 /* OnboardingView.swift in Sources */,
+				CF18E526D4E92E73C73CD5D0 /* AuxiliaryShieldView.swift in Sources */,
+				DE0502C48412F02805341053 /* OverlayWindowManager.swift in Sources */,
+				F91F098B4CD11FC6F08A82C8 /* PasswordPanelController.swift in Sources */,
+				EB8F4B2CD142499BB3BBB5F7 /* ScreenListing.swift in Sources */,
+				1565A5C7465774553BBEF377 /* ShieldWindow.swift in Sources */,
+				1A1AC2B1AA0BBEEDCFAC4709 /* CaptureDeviceCataloging.swift in Sources */,
+				CBC41C779E459FACCDCD3027 /* ContinuityDeviceMatcher.swift in Sources */,
+				24A63F6F6A9D6DB31F557914 /* PresenceEvidence.swift in Sources */,
+				919CDD8DFC75BE69B84AC62C /* PresenceMonitor.swift in Sources */,
+				6EAAE5AFFD2C6DBDF7AAAC97 /* GateEffects.swift in Sources */,
+				FE4B17EDDA7CC9CAA908CBEF /* ScreenLockMonitor.swift in Sources */,
+				7AB6C9B8BA488B805020487F /* SessionEvent.swift in Sources */,
+				D10062331D9294CCD95D47E9 /* SessionGate.swift in Sources */,
+				F74D33EE97E755C150DD23A8 /* ArmDisarmController.swift in Sources */,
+				8073BF7E0716D2A0A16A3E2F /* SettingsView.swift in Sources */,
+				287723A92652D21F22247F83 /* StatusItemController.swift in Sources */,
+				91112EF84367382AA3A7F0A3 /* Logger.swift in Sources */,
+				3A2DFE6F5E9B94B326C8163E /* LoginItemService.swift in Sources */,
+				91D94DA860BD46867488F5C6 /* Permissions.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B156C1E46BE15DE52AC798A1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DB249DB9D0FF833647E29581 /* Assets.xcassets in Resources */,
+				1178028A773C8FD1FE4358FD /* Localizable.strings in Resources */,
+				2C1E3B6EB289E2C73F9698D0 /* app.maclock.agent.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EF4514EEB7D017B9291846EE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9F15BF1D17C1B9A4FE486D7 /* Copy LaunchAgents */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LaunchAgents;
+			dstSubfolderSpec = 1;
+			files = (
+				2C1E3B6EB289E2C73F9698D0 /* app.maclock.agent.plist in Resources */,
+			);
+			name = "Copy LaunchAgents";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		253B7D7D35FBA95AB93123FF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				26F959CB8621F2D7EDC30482 /* FakeCaptureCatalog.swift in Sources */,
+				666C668775BB54486BA27D02 /* FakeClock.swift in Sources */,
+				BE0FB0FD82DC7E9208765A7D /* FakeKeychain.swift in Sources */,
+				198306E6FDDFD79A18298222 /* FakeScreenListing.swift in Sources */,
+				684DFCF013CDD24FD7EA4AED /* GateSecretsStoreTests.swift in Sources */,
+				06866951A2001D60A8E1DDA9 /* OverlayWindowManagerTests.swift in Sources */,
+				A77B3CA1941C1907BDB44D13 /* PasswordStoreTests.swift in Sources */,
+				D65BA25DB1F4EDCD3E4D28F8 /* PresenceClassifierTests.swift in Sources */,
+				50B350A3A1B65FCFFFE19471 /* PresenceMonitorTests.swift in Sources */,
+				8BBFCD45C9A0F8F28932FD62 /* RateLimiterTests.swift in Sources */,
+				1240356A92F0C1D5B2B3F509 /* SessionGateTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CB7AB52839439D30D9F16B7D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E3435DDA2687639586BF0B70 /* MacLock */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5505F9AF814A7F0992DE2402 /* Build configuration list for PBXNativeTarget "MacLock" */;
+			buildPhases = (
+				2FB286088BD0BF8AE88E0D78 /* Sources */,
+				EF4514EEB7D017B9291846EE /* Frameworks */,
+				B156C1E46BE15DE52AC798A1 /* Resources */,
+				C9F15BF1D17C1B9A4FE486D7 /* Copy LaunchAgents */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacLock;
+			productName = MacLock;
+			productReference = 84337AD8D27FCD69AF2C4FC2 /* MacLock.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5DED2D04DB49D4091162647E /* MacLockTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E5A230C5C352779E4F6499D2 /* Build configuration list for PBXNativeTarget "MacLockTests" */;
+			buildPhases = (
+				253B7D7D35FBA95AB93123FF /* Sources */,
+				CB7AB52839439D30D9F16B7D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8678047D32B85C938E34C4D0 /* PBXTargetDependency */,
+			);
+			name = MacLockTests;
+			productName = MacLockTests;
+			productReference = DFDED23FA58339F9273F6C84 /* MacLockTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		8678047D32B85C938E34C4D0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E3435DDA2687639586BF0B70 /* MacLock */;
+			targetProxy = 193D0A8035DE97CF1A3652FD /* PBXContainerItemProxy */;
+		};
+		193D0A8035DE97CF1A3652FD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E3435DDA2687639586BF0B70;
+			remoteInfo = MacLock;
+		};
+		46F86FAA6BBF9AC94A7E4595 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					E3435DDA2687639586BF0B70 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					5DED2D04DB49D4091162647E = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = AD8DC1A475C1871509FE9877 /* Build configuration list for PBXProject "MacLock" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = 518DA81DB9B99529C0C0AEBE;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 547D009064F7C3F13BEF3460 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E3435DDA2687639586BF0B70 /* MacLock */,
+				5DED2D04DB49D4091162647E /* MacLockTests */,
+			);
+		};
+		8FA215508853DD1B15B42625 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+
+			};
+			name = Debug;
+		};
+		2BDD0D5E1CCB93356A13CECC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+
+			};
+			name = Release;
+		};
+		C9A154C4B544979AF5B4B5A5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MacLock/App/MacLock.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MacLock/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 0.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.maclock;
+				PRODUCT_NAME = MacLock;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		987BA7629EBED3E474C358C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MacLock/App/MacLock.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MacLock/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MARKETING_VERSION = 0.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.maclock;
+				PRODUCT_NAME = MacLock;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+		27EE7948CE7FBEF38CA784DE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.maclock.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacLock.app/Contents/MacOS/MacLock";
+			};
+			name = Debug;
+		};
+		1ACB1E86E082A1B937EC92F7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.maclock.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacLock.app/Contents/MacOS/MacLock";
+			};
+			name = Release;
+		};
+		AD8DC1A475C1871509FE9877 /* Build configuration list for PBXProject "MacLock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8FA215508853DD1B15B42625 /* Debug */,
+				2BDD0D5E1CCB93356A13CECC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5505F9AF814A7F0992DE2402 /* Build configuration list for PBXNativeTarget "MacLock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9A154C4B544979AF5B4B5A5 /* Debug */,
+				987BA7629EBED3E474C358C9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E5A230C5C352779E4F6499D2 /* Build configuration list for PBXNativeTarget "MacLockTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27EE7948CE7FBEF38CA784DE /* Debug */,
+				1ACB1E86E082A1B937EC92F7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+	};
+	rootObject = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
+}

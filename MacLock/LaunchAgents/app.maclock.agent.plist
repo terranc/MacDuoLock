@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>app.maclock.agent</string>
+	<key>BundleProgram</key>
+	<string>Contents/MacOS/MacLock</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>--role=agent</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>LimitLoadToSessionType</key>
+	<string>Aqua</string>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+		<key>Crashed</key>
+		<true/>
+	</dict>
+	<key>ThrottleInterval</key>
+	<integer>1</integer>
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>app.maclock</string>
+	</array>
+</dict>
+</plist>
