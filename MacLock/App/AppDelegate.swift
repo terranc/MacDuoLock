@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var positivelyDisarmedOrUnregistered = false
     private var sigterm: DispatchSourceSignal?
     private var onboardingWindow: OnboardingWindowController?
+    private var settingsWindow: SettingsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
@@ -30,7 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
-        MacLockLog.session.info("launch role=\(String(describing: ProcessRole.current()), privacy: .public)")
+        MacLockLog.file("launch role=\(String(describing: ProcessRole.current()))")
         if handleSingleInstance() { return }
 
         let keychain = LiveKeychainClient()
@@ -67,9 +68,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusItem.onLockNow = { [weak self] in self?.lockNow() }
         statusItem.onDetectPhone = { [weak self] in Task { await self?.detectPhone() } }
-        statusItem.onOnboard = { [weak self] in self?.showOnboarding() }
+        statusItem.onSettings = { [weak self] in self?.openSettings() }
         statusItem.onQuit = { [weak self] in self?.quitFromMenu() }
-        statusItem.onLoginItem = { [weak self] in self?.enableLoginItem() }
         statusItem.install(gate: gate)
 
         let snapshot = sessionSnapshot()
@@ -95,10 +95,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlay.passwordPanel.onSubmit = { [weak self] text in
             Task { await self?.submitSecret(text) }
         }
-        overlay.onBackdoor = { [weak self] in self?.unlockFromBackdoor() }
+        overlay.onBackdoor = { [weak self] in self?.toggleFromChord() }
         tap.onBackdoor = { [weak self] in
-            DispatchQueue.main.async { self?.unlockFromBackdoor() }
+            DispatchQueue.main.async { self?.toggleFromChord() }
         }
+        tap.installPersistentChordWatch()
         installSIGTERMSource()
         statusItem.refresh()
     }
@@ -110,9 +111,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return .terminateNow
     }
 
-    private func unlockFromBackdoor() {
-        guard gate.state == .shielded else { return }
-        gate.handle(.passwordVerified)
+    private var lastChordUptime: TimeInterval = 0
+
+    private func toggleFromChord() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastChordUptime > 0.2 else { return }
+        lastChordUptime = now
+        overlay.attachToScreen = true
+        MacLockLog.file("chord toggle from \(gate.state)")
+        gate.handle(.chordToggle)
         statusItem.refresh()
     }
 
@@ -138,6 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showOnboarding() {
+        restoreShellIfNeeded()
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         let window = OnboardingWindowController(flow: onboarding)
@@ -158,7 +166,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         overlay.attachToScreen = true
-        gate.handle(.didLaunch(SessionSnapshot(screenLocked: false, onConsole: true)))
+        gate.handle(.lockNow)
         statusItem.refresh()
     }
 
@@ -184,14 +192,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.refresh()
     }
 
-    private func enableLoginItem() {
-        do {
-            try loginItems.registerMainApp()
-            alert(NSLocalizedString("maclock.loginitem.title", comment: ""), NSLocalizedString("maclock.loginitem.ok", comment: ""))
-        } catch {
-            try? loginItems.openSettings()
-            alert(NSLocalizedString("maclock.loginitem.title", comment: ""), error.localizedDescription)
+    /// Opens the single settings surface. No alerts anywhere in here — the
+    /// login-item outcome is reported inline by the settings view itself.
+    func openSettings() {
+        restoreShellIfNeeded()
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        if settingsWindow == nil {
+            let content = SettingsContentViewController(flow: onboarding, loginItems: loginItems, tap: tap)
+            content.onShortcutChanged = { [weak self] in self?.statusItem.refresh() }
+            let controller = SettingsWindowController(content: content)
+            controller.onClose = { [weak self] in
+                guard let self else { return }
+                self.settingsWindow = nil
+                if self.gate.armed {
+                    NSApp.setActivationPolicy(.accessory)
+                }
+            }
+            settingsWindow = controller
         }
+        settingsWindow?.showWindow(nil)
+        settingsWindow?.window?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Undo any leftover kiosk presentation options before showing a normal
+    /// window, so the Dock and menu bar are never stranded hidden.
+    private func restoreShellIfNeeded() {
+        guard !overlay.isPresented else { return }
+        NSApp.presentationOptions = []
     }
 
     private func quitFromMenu() {

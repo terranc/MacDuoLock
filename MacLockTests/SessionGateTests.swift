@@ -387,4 +387,100 @@ final class SessionGateTests: XCTestCase {
         XCTAssertEqual(gate.state, .disarmed)
         XCTAssertFalse(overlay.isPresented)
     }
+
+    func testChordToggleUnlocksWhenShielded() {
+        arm()
+        gate.handle(.didLaunch(unlockedConsole()))
+        XCTAssertEqual(gate.state, .shielded)
+        gate.handle(.chordToggle)
+        XCTAssertEqual(gate.state, .unlocked)
+        XCTAssertFalse(overlay.isPresented)
+    }
+
+    func testChordToggleLocksWhenUnlockedAndShowsPasswordOverlay() {
+        arm()
+        gate.handle(.didLaunch(unlockedConsole()))
+        gate.handle(.passwordVerified)
+        XCTAssertEqual(gate.state, .unlocked)
+        gate.handle(.chordToggle)
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertTrue(overlay.isPresented)
+        XCTAssertEqual(overlay.lastReason, .lockNow)
+    }
+
+    func testChordToggleLocksDuringCheckingPresence() {
+        arm()
+        gate.presenceEnabled = true
+        gate.cameraAuthorized = true
+        gate.waitTOnUnlock = true
+        gate.handle(.didLaunch(lockedConsole()))
+        gate.handle(.screenUnlocked)
+        XCTAssertEqual(gate.state, .checkingPresence)
+        let gen = gate.generation
+        gate.handle(.chordToggle)
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertTrue(overlay.isPresented)
+        XCTAssertEqual(overlay.lastReason, .lockNow)
+        XCTAssertNotEqual(gate.generation, gen)
+        gate.handle(.presenceTimeout(generation: gen))
+        XCTAssertEqual(gate.state, .shielded)
+    }
+
+    func testChordToggleIgnoredWhenMonitoring() {
+        arm()
+        gate.handle(.didLaunch(lockedConsole()))
+        gate.handle(.chordToggle)
+        XCTAssertEqual(gate.state, .monitoring)
+        XCTAssertFalse(overlay.isPresented)
+    }
+
+    func testChordToggleIgnoredWhenDisarmed() {
+        gate.handle(.didLaunch(unlockedConsole()))
+        gate.handle(.chordToggle)
+        XCTAssertEqual(gate.state, .disarmed)
+        XCTAssertFalse(overlay.isPresented)
+    }
+
+    func testLockNowFromUnlockedShieldsImmediately() {
+        arm()
+        gate.presenceEnabled = true
+        gate.cameraAuthorized = true
+        gate.waitTOnUnlock = true
+        gate.handle(.didLaunch(unlockedConsole()))
+        gate.handle(.passwordVerified)
+        gate.handle(.lockNow)
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertEqual(overlay.lastReason, .lockNow)
+        XCTAssertTrue(overlay.isPresented)
+    }
+
+    func testLockNowIgnoredWhenMonitoring() {
+        arm()
+        gate.handle(.didLaunch(lockedConsole()))
+        gate.handle(.lockNow)
+        XCTAssertEqual(gate.state, .monitoring)
+        XCTAssertFalse(overlay.isPresented)
+    }
+
+    func testExplicitLockDoesNotAutoDismissOnPresence() {
+        arm()
+        gate.autoDismissOnPresenceWhileShielded = true
+        gate.presenceEnabled = true
+        gate.cameraAuthorized = true
+        gate.handle(.didLaunch(unlockedConsole()))
+        gate.handle(.passwordVerified)
+        gate.handle(.chordToggle)
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertEqual(overlay.lastReason, .lockNow)
+        gate.handle(.presenceMatched(PresenceEvidence(
+            generation: gate.generation,
+            matchReason: .uniqueID,
+            uniqueIDFingerprint: "x",
+            truncatedLocalizedName: "n",
+            continuityCount: 1,
+            elapsedMs: 0
+        )))
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertTrue(overlay.isPresented)
+    }
 }

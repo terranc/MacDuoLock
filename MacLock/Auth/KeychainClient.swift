@@ -56,14 +56,13 @@ final class LiveKeychainClient: KeychainClient {
     private let files = FileSecretStore()
 
     func get(account: String) -> KeychainQuery<Data> {
-        let classic = copyMatching(account: account, dataProtection: false)
-        if case .yes = classic { return classic }
         let protected = copyMatching(account: account, dataProtection: true)
         if case .yes = protected { return protected }
         let file = files.get(account: account)
         if case .yes = file { return file }
-        if classic.isUnavailable && protected.isUnavailable && file.isNo { return classic }
-        if file.isNo { return .no }
+        // File-based keychain ACLs block LSUIElement apps waiting for a hidden
+        // Allow sheet. Never query it on the launch path.
+        if case .unavailable = protected { return protected }
         return file
     }
 
@@ -74,6 +73,7 @@ final class LiveKeychainClient: KeychainClient {
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail,
         ]
         if dataProtection {
             query[kSecUseDataProtectionKeychain as String] = true
@@ -86,11 +86,7 @@ final class LiveKeychainClient: KeychainClient {
     }
 
     func set(account: String, data: Data) throws {
-        do {
-            try addItem(account: account, data: data, dataProtection: false)
-        } catch {
-            try? addItem(account: account, data: data, dataProtection: true)
-        }
+        try? addItem(account: account, data: data, dataProtection: true)
         try files.set(account: account, data: data)
     }
 
@@ -117,17 +113,13 @@ final class LiveKeychainClient: KeychainClient {
     }
 
     func delete(account: String) throws {
-        for dataProtection in [false, true] {
-            var query: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: KeychainAccount.service,
-                kSecAttrAccount as String: account,
-            ]
-            if dataProtection {
-                query[kSecUseDataProtectionKeychain as String] = true
-            }
-            SecItemDelete(query as CFDictionary)
-        }
+        var query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: KeychainAccount.service,
+            kSecAttrAccount as String: account,
+            kSecUseDataProtectionKeychain as String: true,
+        ]
+        SecItemDelete(query as CFDictionary)
         try files.delete(account: account)
     }
 }

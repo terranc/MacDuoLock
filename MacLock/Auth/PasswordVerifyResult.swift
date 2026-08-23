@@ -67,11 +67,15 @@ enum PasswordStoreError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .tooShort(let length):
-            return "口令至少 8 个字符（当前 \(length) 个）"
+            return String(
+                format: NSLocalizedString("maclock.error.tooshort", comment: ""),
+                PasswordStore.minimumLength,
+                length
+            )
         case .mismatch:
-            return "两次输入的口令不一致"
+            return NSLocalizedString("maclock.error.mismatch", comment: "")
         case .keychain(let status):
-            return "无法写入钥匙串（代码 \(status)）"
+            return String(format: NSLocalizedString("maclock.error.keychain", comment: ""), Int(status))
         }
     }
 }

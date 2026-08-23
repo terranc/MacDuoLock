@@ -6,9 +6,8 @@ final class StatusItemController: NSObject {
     private weak var gate: SessionGate?
     var onLockNow: (() -> Void)?
     var onDetectPhone: (() -> Void)?
-    var onOnboard: (() -> Void)?
+    var onSettings: (() -> Void)?
     var onQuit: (() -> Void)?
-    var onLoginItem: (() -> Void)?
 
     func install(gate: SessionGate) {
         self.gate = gate
@@ -25,10 +24,15 @@ final class StatusItemController: NSObject {
         let menu = NSMenu()
         menu.addItem(statusHeader(state))
         menu.addItem(.separator())
-        menu.addItem(item(NSLocalizedString("maclock.menu.locknow", comment: ""), "lock.fill", #selector(lockNow)))
+        let lock = item(NSLocalizedString("maclock.menu.locknow", comment: ""), "lock.fill", #selector(lockNow))
+        // Display only — the chord is delivered by the event tap / Carbon hot key,
+        // since a status-item menu's key equivalents fire only while it is open.
+        let shortcut = LockShortcutStore.current
+        lock.keyEquivalent = shortcut.keyEquivalent
+        lock.keyEquivalentModifierMask = shortcut.cocoaModifiers
+        menu.addItem(lock)
         menu.addItem(item(NSLocalizedString("maclock.menu.detect", comment: ""), "iphone", #selector(detectPhone)))
-        menu.addItem(item(NSLocalizedString("maclock.menu.onboard", comment: ""), "key.fill", #selector(onboard)))
-        menu.addItem(item(NSLocalizedString("maclock.menu.loginitem", comment: ""), "power", #selector(loginItem)))
+        menu.addItem(item(NSLocalizedString("maclock.menu.settings", comment: ""), "gearshape", #selector(settings)))
         menu.addItem(.separator())
         menu.addItem(item(NSLocalizedString("maclock.menu.quit", comment: ""), "xmark.circle", #selector(quit)))
         item?.menu = menu
@@ -85,7 +89,6 @@ final class StatusItemController: NSObject {
 
     @objc private func lockNow() { onLockNow?() }
     @objc private func detectPhone() { onDetectPhone?() }
-    @objc private func onboard() { onOnboard?() }
+    @objc private func settings() { onSettings?() }
     @objc private func quit() { onQuit?() }
-    @objc private func loginItem() { onLoginItem?() }
 }

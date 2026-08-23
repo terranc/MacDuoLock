@@ -37,54 +37,110 @@ enum ShieldStyle {
     }
 }
 
-/// Capsule that hosts the secure field. Owns the focus ring we draw ourselves,
-/// because the system focus ring is close to invisible on a pure black backdrop.
+/// Capsule around the secure field. Drawn in `draw(_:)`, never `wantsLayer` —
+/// a layer-backed ancestor makes `NSSecureTextField`'s field editor desync.
 private final class CapsuleView: NSView {
     var isFocused = false {
-        didSet { updateBorder() }
+        didSet { needsDisplay = true }
     }
 
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        wantsLayer = true
-        layer?.cornerCurve = .continuous
-        layer?.backgroundColor = ShieldStyle.fieldFill.cgColor
-        layer?.borderWidth = 1
-        updateBorder()
-    }
+    override var isOpaque: Bool { false }
+    override var wantsUpdateLayer: Bool { false }
 
-    required init?(coder: NSCoder) { nil }
-
-    override func layout() {
-        super.layout()
-        layer?.cornerRadius = bounds.height / 2
-    }
-
-    private func updateBorder() {
-        let color = isFocused ? ShieldStyle.fieldBorderFocused : ShieldStyle.fieldBorder
-        layer?.borderColor = color.cgColor
+    override func draw(_ dirtyRect: NSRect) {
+        let inset = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let path = NSBezierPath(roundedRect: inset, xRadius: inset.height / 2, yRadius: inset.height / 2)
+        ShieldStyle.fieldFill.setFill()
+        path.fill()
+        (isFocused ? ShieldStyle.fieldBorderFocused : ShieldStyle.fieldBorder).setStroke()
+        path.lineWidth = 1
+        path.stroke()
     }
 }
 
-/// Secure field with the system focus ring suppressed; focus is reported upward
-/// so `CapsuleView` can draw the highlight instead.
+/// Secure field. Do not replace its cell class — that breaks first responder.
 final class ShieldSecureField: NSSecureTextField {
     var onFocusChange: ((Bool) -> Void)?
+    var onEdit: (() -> Void)?
 
     override func becomeFirstResponder() -> Bool {
         let accepted = super.becomeFirstResponder()
-        if accepted { onFocusChange?(true) }
+        if accepted {
+            polishEditor()
+            onFocusChange?(true)
+            onEdit?()
+        }
         return accepted
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let resigned = super.resignFirstResponder()
+        if resigned { onFocusChange?(false) }
+        return resigned
     }
 
     override var focusRingMaskBounds: NSRect { .zero }
     override func drawFocusRingMask() {}
+
+    /// Strip editor chrome. Do not change isRichText / cell class / fieldEditor.
+    func polishEditor() {
+        guard let editor = currentEditor() as? NSTextView else { return }
+        editor.drawsBackground = false
+        editor.backgroundColor = .clear
+        editor.insertionPointColor = ShieldStyle.primaryText
+        editor.isContinuousSpellCheckingEnabled = false
+        editor.isGrammarCheckingEnabled = false
+        editor.isAutomaticSpellingCorrectionEnabled = false
+        let font = self.font ?? .systemFont(ofSize: 15)
+        editor.markedTextAttributes = [
+            .font: font,
+            .foregroundColor: ShieldStyle.primaryText,
+        ]
+        editor.typingAttributes = [
+            .font: font,
+            .foregroundColor: ShieldStyle.primaryText,
+            .underlineStyle: 0,
+        ]
+        let length = editor.textStorage?.length ?? editor.string.utf16.count
+        let range = NSRange(location: 0, length: length)
+        editor.textStorage?.removeAttribute(.underlineStyle, range: range)
+        editor.textStorage?.removeAttribute(.underlineColor, range: range)
+        editor.textStorage?.removeAttribute(.backgroundColor, range: range)
+        editor.layoutManager?.removeTemporaryAttribute(.underlineStyle, forCharacterRange: range)
+        editor.layoutManager?.removeTemporaryAttribute(.underlineColor, forCharacterRange: range)
+        editor.layoutManager?.removeTemporaryAttribute(.backgroundColor, forCharacterRange: range)
+    }
 }
 
-/// Round icon button embedded at the trailing edge of the capsule.
+/// Round icon button drawn without CALayer so it cannot layer-back the field.
 private final class RoundIconButton: NSButton {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = false
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override var wantsUpdateLayer: Bool { false }
+
     override var isEnabled: Bool {
-        didSet { alphaValue = isEnabled ? 1.0 : 0.35 }
+        didSet { alphaValue = isEnabled ? 1.0 : 0.35; needsDisplay = true }
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let oval = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.5, dy: 0.5))
+        ShieldStyle.buttonFill.setFill()
+        oval.fill()
+        if let image {
+            let size = NSSize(width: 13, height: 13)
+            let rect = NSRect(
+                x: ((bounds.width - size.width) / 2).rounded(),
+                y: ((bounds.height - size.height) / 2).rounded(),
+                width: size.width,
+                height: size.height
+            )
+            image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+        }
     }
 }
 
@@ -119,6 +175,8 @@ final class PasswordPanelController: NSViewController {
     var onSubmit: ((String) -> Void)?
     var onForgot: (() -> Void)?
     private(set) var recoveryMode = false
+    private var isBusy = false
+    private var placeholderKey = "maclock.password.placeholder"
 
     override func loadView() {
         let root = BlackFillView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
@@ -128,7 +186,7 @@ final class PasswordPanelController: NSViewController {
         configureSubmit()
         configureLabels()
         [lockIcon, hint, capsule, forgot].forEach { root.addSubview($0) }
-        [field, ghost, submit, spinner].forEach { capsule.addSubview($0) }
+        [ghost, field, submit].forEach { capsule.addSubview($0) }
         activateConstraints(in: root)
         view = root
     }
@@ -138,6 +196,7 @@ final class PasswordPanelController: NSViewController {
         lockIcon.contentTintColor = ShieldStyle.icon
         lockIcon.imageScaling = .scaleNone
         lockIcon.translatesAutoresizingMaskIntoConstraints = false
+        lockIcon.wantsLayer = false
     }
 
     private func configureField() {
@@ -149,24 +208,26 @@ final class PasswordPanelController: NSViewController {
         field.onFocusChange = { [weak self] focused in
             self?.capsule.isFocused = focused
         }
-        ghost.stringValue = NSLocalizedString("maclock.password.placeholder", comment: "")
+        field.onEdit = { [weak self] in self?.refreshGhost() }
         ghost.font = .systemFont(ofSize: 15)
         ghost.textColor = ShieldStyle.tertiaryText
         ghost.alignment = .left
         ghost.drawsBackground = false
         ghost.isBezeled = false
+        ghost.isEditable = false
+        ghost.isSelectable = false
+        ghost.refusesFirstResponder = true
         ghost.translatesAutoresizingMaskIntoConstraints = false
+        setPlaceholder("maclock.password.placeholder")
     }
 
     private func configureSubmit() {
         submit.isBordered = false
-        submit.bezelStyle = .regularSquare
+        submit.bezelStyle = .shadowlessSquare
         submit.imagePosition = .imageOnly
         submit.image = ShieldStyle.symbol("arrow.right", pointSize: 13, weight: .semibold)
         submit.contentTintColor = ShieldStyle.primaryText
-        submit.wantsLayer = true
-        submit.layer?.cornerRadius = 15
-        submit.layer?.backgroundColor = ShieldStyle.buttonFill.cgColor
+        submit.wantsLayer = false
         submit.toolTip = NSLocalizedString("maclock.submit", comment: "")
         submit.setAccessibilityLabel(NSLocalizedString("maclock.submit", comment: ""))
         submit.translatesAutoresizingMaskIntoConstraints = false
@@ -178,6 +239,8 @@ final class PasswordPanelController: NSViewController {
         spinner.isDisplayedWhenStopped = false
         spinner.appearance = NSAppearance(named: .darkAqua)
         spinner.translatesAutoresizingMaskIntoConstraints = false
+        spinner.wantsLayer = false
+        spinner.isHidden = true
     }
 
     private func configureLabels() {
@@ -189,6 +252,7 @@ final class PasswordPanelController: NSViewController {
         hint.alignment = .center
         hint.maximumNumberOfLines = 3
         hint.lineBreakMode = .byWordWrapping
+        hint.refusesFirstResponder = true
         hint.translatesAutoresizingMaskIntoConstraints = false
 
         forgot.isBordered = false
@@ -227,11 +291,6 @@ final class PasswordPanelController: NSViewController {
             submit.widthAnchor.constraint(equalToConstant: 30),
             submit.heightAnchor.constraint(equalToConstant: 30),
 
-            spinner.centerXAnchor.constraint(equalTo: submit.centerXAnchor),
-            spinner.centerYAnchor.constraint(equalTo: submit.centerYAnchor),
-            spinner.widthAnchor.constraint(equalToConstant: 16),
-            spinner.heightAnchor.constraint(equalToConstant: 16),
-
             hint.bottomAnchor.constraint(equalTo: capsule.topAnchor, constant: -22),
             hint.centerXAnchor.constraint(equalTo: root.centerXAnchor),
             hint.widthAnchor.constraint(equalToConstant: 420),
@@ -260,14 +319,21 @@ final class PasswordPanelController: NSViewController {
             recoveryMode = false
             field.isEnabled = true
             submit.isEnabled = true
-            field.stringValue = ""
-            field.placeholderString = nil
             setIcon(named: "lock.fill")
-            ghost.stringValue = NSLocalizedString("maclock.password.placeholder", comment: "")
+            setPlaceholder("maclock.password.placeholder")
             showInfo(NSLocalizedString("maclock.unlock.prompt", comment: ""))
-            refreshGhost()
             forgot.isHidden = true
+            resetInput()
         }
+        refreshGhost()
+    }
+
+    /// Drop whatever was typed last time. Relock must always open on an empty field.
+    func resetInput() {
+        field.abortEditing()
+        field.stringValue = ""
+        (field.cell as? NSTextFieldCell)?.stringValue = ""
+        refreshGhost()
     }
 
     func enterRecoveryMode() {
@@ -275,11 +341,11 @@ final class PasswordPanelController: NSViewController {
         field.stringValue = ""
         field.isEnabled = true
         submit.isEnabled = true
-        field.placeholderString = nil
         setIcon(named: "key.fill")
-        ghost.stringValue = NSLocalizedString("maclock.recovery.placeholder", comment: "")
+        setPlaceholder("maclock.recovery.placeholder")
         showInfo(NSLocalizedString("maclock.recovery.prompt", comment: ""))
         forgot.isHidden = true
+        restoreFieldFocus()
         refreshGhost()
     }
 
@@ -289,43 +355,72 @@ final class PasswordPanelController: NSViewController {
         hint.stringValue = text
     }
 
-    /// Rejection feedback: red text, capsule shake, and a cleared field so the
-    /// user retypes rather than editing a wrong value they cannot see.
+    /// Rejection feedback: keep the typed value and first responder so the user
+    /// can edit and retry. Do not recreate the field editor.
     func showError(_ text: String) {
         hint.textColor = .systemRed
         hint.stringValue = text
-        field.stringValue = ""
+        restoreFieldFocus()
+        field.polishEditor()
         refreshGhost()
-        shakeCapsule()
+    }
+
+    private func setPlaceholder(_ key: String) {
+        placeholderKey = key
+        field.placeholderString = nil
+        (field.cell as? NSTextFieldCell)?.placeholderString = nil
+        (field.cell as? NSTextFieldCell)?.placeholderAttributedString = nil
+        ghost.stringValue = NSLocalizedString(key, comment: "")
+        refreshGhost()
     }
 
     private func setIcon(named name: String) {
         lockIcon.image = ShieldStyle.symbol(name, pointSize: 40, weight: .light)
     }
 
-    private func shakeCapsule() {
-        guard let layer = capsule.layer else { return }
-        let animation = CAKeyframeAnimation(keyPath: "position.x")
-        let origin = layer.position.x
-        animation.values = [0, -10, 9, -7, 5, -3, 0].map { origin + $0 }
-        animation.duration = 0.42
-        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        layer.add(animation, forKey: "shake")
-    }
+    var isPlaceholderVisible: Bool { !ghost.isHidden }
 
-    private func refreshGhost() {
-        ghost.isHidden = !field.stringValue.isEmpty
+    func refreshGhost() {
+        let editor = field.currentEditor()?.string ?? ""
+        ghost.isHidden = !editor.isEmpty || !field.stringValue.isEmpty
     }
 
     func setBusy(_ busy: Bool) {
-        field.isEnabled = !busy
+        isBusy = busy
         submit.isEnabled = !busy
         submit.isHidden = busy
         if busy {
+            attachSpinner()
             spinner.startAnimation(nil)
         } else {
             spinner.stopAnimation(nil)
+            spinner.removeFromSuperview()
+            restoreFieldFocus()
+            field.polishEditor()
+            refreshGhost()
         }
+    }
+
+    private func attachSpinner() {
+        guard spinner.superview == nil else { return }
+        capsule.addSubview(spinner)
+        NSLayoutConstraint.activate([
+            spinner.centerXAnchor.constraint(equalTo: submit.centerXAnchor),
+            spinner.centerYAnchor.constraint(equalTo: submit.centerYAnchor),
+            spinner.widthAnchor.constraint(equalToConstant: 16),
+            spinner.heightAnchor.constraint(equalToConstant: 16),
+        ])
+    }
+
+    func restoreFieldFocus() {
+        guard field.isEnabled else { return }
+        guard let window = view.window ?? field.window else { return }
+        if window.firstResponder === field.currentEditor() {
+            field.polishEditor()
+            return
+        }
+        window.makeFirstResponder(field)
+        field.polishEditor()
     }
 
     func revealForgot() {
@@ -333,6 +428,7 @@ final class PasswordPanelController: NSViewController {
     }
 
     @objc private func submitClicked() {
+        guard !isBusy else { return }
         onSubmit?(field.stringValue)
     }
 
@@ -344,11 +440,13 @@ final class PasswordPanelController: NSViewController {
 
 extension PasswordPanelController: NSTextFieldDelegate {
     func controlTextDidChange(_ obj: Notification) {
+        field.polishEditor()
         refreshGhost()
     }
 
     func controlTextDidEndEditing(_ obj: Notification) {
         capsule.isFocused = false
+        refreshGhost()
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {

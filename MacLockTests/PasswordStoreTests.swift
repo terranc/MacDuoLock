@@ -47,10 +47,10 @@ final class PasswordStoreTests: XCTestCase {
     func testShortPasswordRejected() async {
         let store = PasswordStore(secrets: GateSecretsStore(keychain: FakeKeychain()), clock: FakeClock())
         do {
-            try await store.setPassword("short")
+            try await store.setPassword("abc")
             XCTFail("expected tooShort")
         } catch PasswordStoreError.tooShort(length: let length) {
-            XCTAssertEqual(length, 5)
+            XCTAssertEqual(length, 3)
         } catch {
             XCTFail("wrong error \(error)")
         }

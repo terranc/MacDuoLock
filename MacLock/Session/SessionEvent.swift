@@ -21,6 +21,10 @@ enum SessionEvent: Equatable {
     case presenceTimeout(generation: UInt64)
     case passwordVerified
     case passwordRejected
+    /// Menu / explicit lock: raise the password overlay immediately.
+    case lockNow
+    /// Control-Option-Command-Grave: unlock when shielded, lock when at the desktop.
+    case chordToggle
     case screensChanged
     case didWake(SessionSnapshot)
     case reconcile(SessionSnapshot)

@@ -3,11 +3,9 @@ import AppKit
 @MainActor
 final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
     private enum Metrics {
-        static let windowWidth: CGFloat = 520
-        static let windowHeight: CGFloat = 430
-        static let sideInset: CGFloat = 32
-        /// Window width minus both side insets; wrapping labels need it explicitly.
-        static let contentWidth: CGFloat = windowWidth - sideInset * 2
+        /// Matches the settings window so the two feel like one app.
+        static let contentWidth: CGFloat = 420
+        static let sideInset: CGFloat = 24
     }
 
     private let flow: OnboardingFlow
@@ -19,7 +17,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
     private let passwordField = NSSecureTextField(string: "")
     private let confirmField = NSSecureTextField(string: "")
     private let ruleIcon = NSImageView()
-    private let ruleLabel = NSTextField(labelWithString: NSLocalizedString("maclock.onboard.short", comment: ""))
+    private let ruleLabel = NSTextField(labelWithString: "")
     private let errorIcon = NSImageView()
     private let errorLabel = NSTextField(labelWithString: "")
     private let actionButton = NSButton(title: NSLocalizedString("maclock.onboard.continue", comment: ""), target: nil, action: nil)
@@ -32,7 +30,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
     init(flow: OnboardingFlow) {
         self.flow = flow
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: Metrics.windowWidth, height: Metrics.windowHeight),
+            contentRect: NSRect(x: 0, y: 0, width: 468, height: 460),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -41,8 +39,12 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         window.isMovableByWindowBackground = true
         super.init(window: window)
         window.delegate = self
+        let content = buildView()
+        window.contentView = content
+        // Size to the content instead of a guessed height, so no dead band is
+        // left under the form.
+        window.setContentSize(content.fittingSize)
         window.center()
-        window.contentView = buildView()
         window.initialFirstResponder = passwordField
         window.defaultButtonCell = actionButton.cell as? NSButtonCell
     }
@@ -50,21 +52,19 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
     required init?(coder: NSCoder) { nil }
 
     private func buildView() -> NSView {
-        let root = NSView(frame: NSRect(x: 0, y: 0, width: Metrics.windowWidth, height: Metrics.windowHeight))
+        let root = NSView()
         configureHeader()
         configureFields()
         configureFeedback()
         configureButton()
         let stack = buildStack()
         root.addSubview(stack)
-        root.addSubview(actionButton)
         NSLayoutConstraint.activate([
+            stack.widthAnchor.constraint(equalToConstant: Metrics.contentWidth),
             stack.topAnchor.constraint(equalTo: root.topAnchor, constant: 28),
             stack.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: Metrics.sideInset),
             stack.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -Metrics.sideInset),
-            actionButton.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -Metrics.sideInset),
-            actionButton.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -24),
-            actionButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 110),
+            stack.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -28),
         ])
         return root
     }
@@ -90,6 +90,12 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         stack.setCustomSpacing(18, after: confirmField)
         stack.addArrangedSubview(ruleRow)
         stack.addArrangedSubview(errorRow)
+        // Fixed gap rather than custom spacing: errorRow collapses when hidden,
+        // and NSStackView drops the spacing that follows a collapsed view.
+        let gap = NSView()
+        gap.heightAnchor.constraint(equalToConstant: 14).isActive = true
+        stack.addArrangedSubview(gap)
+        stack.addArrangedSubview(actionButton)
         return stack
     }
 
@@ -177,6 +183,10 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         ruleIcon.image = symbol(name)
         ruleIcon.contentTintColor = color
         ruleLabel.textColor = satisfied ? .secondaryLabelColor : .tertiaryLabelColor
+        ruleLabel.stringValue = String(
+            format: NSLocalizedString("maclock.onboard.short", comment: ""),
+            PasswordStore.minimumLength
+        )
     }
 
     private func showError(_ message: String) {

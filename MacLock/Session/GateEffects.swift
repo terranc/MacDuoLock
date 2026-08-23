@@ -20,6 +20,8 @@ enum OverlayReason: Equatable {
     case relaunchWhileUnlocked
     case keychainUnavailable
     case recoveryRotate
+    /// Explicit lock (menu / chord). Must not auto-dismiss on nearby iPhone.
+    case lockNow
 }
 
 enum TapCommand: Equatable {

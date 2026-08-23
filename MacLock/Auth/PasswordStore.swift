@@ -1,7 +1,7 @@
 import Foundation
 
 final class PasswordStore: PasswordStoring {
-    static let minimumLength = 8
+    static let minimumLength = 4
 
     let secrets: GateSecretsStore
     let hasher: any PasswordHashing

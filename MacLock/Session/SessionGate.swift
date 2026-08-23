@@ -201,6 +201,17 @@ final class SessionGate {
             ignore()
         case (.unlocked, .screenUnlocked):
             enterUnlockPath(fromSyntheticMonitoring: true)
+        case (.shielded, .chordToggle):
+            apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
+        case (.unlocked, .chordToggle), (.checkingPresence, .chordToggle),
+             (.unlocked, .lockNow), (.checkingPresence, .lockNow):
+            shieldImmediately(reason: .lockNow, allowPresenceDismiss: false)
+        case (.shielded, .lockNow):
+            if !overlay.isPresented, let reason = lastOverlayReason {
+                apply(state: .shielded, overlay: .present(reason), tap: .start, presence: .stay, bump: false, ui: .none)
+            } else {
+                ignore()
+            }
         case (.shielded, .passwordVerified):
             apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         case (.shielded, .passwordRejected):
@@ -211,7 +222,7 @@ final class SessionGate {
             secrets.writeCleanDisarm()
             apply(state: .disarmed, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         case (.shielded, .presenceMatched):
-            if autoDismissOnPresenceWhileShielded {
+            if autoDismissOnPresenceWhileShielded, lastOverlayReason != .lockNow {
                 apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
             } else {
                 ignore()
@@ -274,9 +285,13 @@ final class SessionGate {
         if waitT {
             beginWaitTCheck()
         } else {
-            let p: PresenceCommand = autoDismissOnPresenceWhileShielded && presenceOK ? .start(generation: 0) : .stop
-            apply(state: .shielded, overlay: .present(.passwordOnly), tap: .start, presence: p, bump: true, ui: .none)
+            shieldImmediately(reason: .passwordOnly)
         }
+    }
+
+    private func shieldImmediately(reason: OverlayReason, allowPresenceDismiss: Bool = true) {
+        let p: PresenceCommand = allowPresenceDismiss && autoDismissOnPresenceWhileShielded && presenceOK ? .start(generation: 0) : .stop
+        apply(state: .shielded, overlay: .present(reason), tap: .start, presence: p, bump: true, ui: .none)
     }
 
     func beginWaitTCheck() {

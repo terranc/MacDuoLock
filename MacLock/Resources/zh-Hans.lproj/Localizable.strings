@@ -3,43 +3,54 @@
 "maclock.password.placeholder" = "MacLock 口令";
 "maclock.password.confirm" = "确认口令";
 "maclock.keychain.waiting" = "正在读取钥匙串…";
-"maclock.recovery.rotate" = "请设置新口令并保存新的恢复密钥";
 "maclock.unlock.prompt" = "请输入 MacLock 口令";
-"maclock.onboard.title" = "MacLock";
-"maclock.onboard.clock" = "每次系统解锁后都会立即出现口令遮罩。iPhone 近场检测默认关闭，以后可在设置中打开。";
-"maclock.onboard.continue" = "继续";
-"maclock.onboard.saved" = "我已抄下恢复密钥";
-"maclock.onboard.short" = "口令至少 8 个字符";
-"maclock.onboard.mismatch" = "两次口令不一致";
+"maclock.unlock.wrong" = "口令不正确";
+"maclock.unlock.nosecret" = "钥匙串里没有口令记录，请在设置里重新设置口令";
+"maclock.unlock.malformed" = "口令记录损坏，请在设置里重新设置口令";
+
+"maclock.recovery.rotate" = "请设置新口令并保存新的恢复密钥";
 "maclock.recovery.save" = "请立刻抄下恢复密钥（已复制到剪贴板）：";
 "maclock.recovery.placeholder" = "恢复密钥";
 "maclock.recovery.prompt" = "输入恢复密钥以解锁";
-"maclock.unlock.wrong" = "口令不正确";
-"maclock.unlock.nosecret" = "钥匙串里没有口令记录，请在菜单里重新设置口令";
-"maclock.unlock.malformed" = "口令记录损坏，请在菜单里重新设置口令";
-"maclock.settings.presence.off" = "iPhone 近场检测已关闭（v1）。";
+
+"maclock.onboard.title" = "MacLock";
+"maclock.onboard.headline" = "设置 MacLock 口令";
+"maclock.onboard.clock" = "每次系统解锁后都会立即出现口令遮罩。iPhone 近场检测默认关闭，以后可在设置中打开。";
+"maclock.onboard.field.password" = "口令";
+"maclock.onboard.continue" = "继续";
+"maclock.onboard.saved" = "我已抄下恢复密钥";
+"maclock.onboard.short" = "口令至少 %ld 个字符";
+
+"maclock.error.tooshort" = "口令至少 %1$ld 个字符（当前 %2$ld 个）";
+"maclock.error.mismatch" = "两次输入的口令不一致";
+"maclock.error.keychain" = "无法写入钥匙串（代码 %ld）";
+
 "maclock.menu.status" = "MacLock";
 "maclock.menu.settings" = "设置";
 "maclock.menu.locknow" = "立即锁定";
 "maclock.menu.detect" = "检测 iPhone";
-"maclock.menu.onboard" = "设置口令";
-"maclock.menu.loginitem" = "开机启动";
 "maclock.menu.quit" = "退出 MacLock";
 "maclock.menu.status.disarmed" = "未布防";
 "maclock.menu.status.monitoring" = "等待系统解锁";
 "maclock.menu.status.checking" = "正在检测 iPhone";
 "maclock.menu.status.unlocked" = "已解锁";
 "maclock.menu.status.shielded" = "遮罩中";
+
 "maclock.detect.title" = "iPhone 检测";
 "maclock.detect.found" = "已绑定连续互通设备：%@\n手机在旁边且能被连续互通相机发现时，解锁后可自动放行；否则仍要口令。\n同一 Wi-Fi（例如 192.168.0.9）不能证明手机在电脑旁边。";
-"maclock.loginitem.title" = "开机启动";
-"maclock.loginitem.ok" = "已请求登录项。若系统弹出开关，请打开 MacLock。";
-"maclock.onboard.headline" = "设置 MacLock 口令";
-"maclock.onboard.field.password" = "口令";
-"maclock.settings.section.status" = "状态";
-"maclock.settings.section.about" = "关于";
-"maclock.settings.overlay.label" = "解锁后遮罩";
-"maclock.settings.overlay.value" = "始终开启";
-"maclock.settings.presence.label" = "iPhone 近场检测";
-"maclock.settings.presence.value" = "已关闭";
+
+"maclock.settings.section.password" = "口令";
+"maclock.settings.section.shortcut" = "锁定快捷键";
+"maclock.settings.section.general" = "通用";
+"maclock.settings.password.new" = "新口令";
+"maclock.settings.password.update" = "更新口令";
+"maclock.settings.password.updated" = "口令已更新";
+"maclock.settings.shortcut.recording" = "按下新的快捷键…";
+"maclock.settings.shortcut.reset" = "恢复默认";
+"maclock.settings.shortcut.hint" = "在任意界面按下该组合键即可锁定或解锁，至少需要包含 ⌃、⌥ 或 ⌘。";
+"maclock.settings.loginitem" = "开机时启动 MacLock";
+"maclock.settings.loginitem.enabled" = "已启用";
+"maclock.settings.loginitem.approval" = "需要在「系统设置 › 通用 › 登录项」里允许 MacLock";
+"maclock.settings.loginitem.notfound" = "未找到登录项，请先把 MacLock 移动到「应用程序」文件夹";
+"maclock.settings.loginitem.opensettings" = "打开系统设置";
 "maclock.settings.version" = "版本";

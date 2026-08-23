@@ -12,6 +12,7 @@ final class OverlayWindowManager: OverlayCommanding {
     private(set) var dismissSyncCount = 0
     private(set) var rebuildCount = 0
     private(set) var savedPresentationOptions: NSApplication.PresentationOptions = []
+    private var didSavePresentationOptions = false
 
     var onBackdoor: (() -> Void)?
     let passwordPanel = PasswordPanelController()
@@ -44,6 +45,7 @@ final class OverlayWindowManager: OverlayCommanding {
             let window = ShieldWindow(role: role, contentRect: descriptor.frame)
             if role == .primary {
                 passwordPanel.view.removeFromSuperview()
+                passwordPanel.resetInput()
                 passwordPanel.configure(reason: reason)
                 let panel = passwordPanel.view
                 panel.frame = NSRect(origin: .zero, size: descriptor.frame.size)
@@ -76,7 +78,14 @@ final class OverlayWindowManager: OverlayCommanding {
             windows.append(window)
         }
         if attachToScreen {
-            savedPresentationOptions = NSApp.presentationOptions
+            // Guard like savedActivationPolicy above: a second present() while
+            // already shielded would otherwise capture the *hidden* options as
+            // the "original" state, and dismiss would restore a hidden Dock and
+            // menu bar permanently.
+            if !didSavePresentationOptions {
+                savedPresentationOptions = NSApp.presentationOptions
+                didSavePresentationOptions = true
+            }
             NSApp.presentationOptions = [
                 .hideDock, .hideMenuBar, .disableAppleMenu,
                 .disableProcessSwitching, .disableForceQuit,
@@ -104,9 +113,11 @@ final class OverlayWindowManager: OverlayCommanding {
         tearDownWindows()
         isPresented = false
         lastReason = nil
+        passwordPanel.resetInput()
         removeBackdoorMonitor()
         if attachToScreen {
             NSApp.presentationOptions = savedPresentationOptions
+            didSavePresentationOptions = false
             if let savedActivationPolicy {
                 NSApp.setActivationPolicy(savedActivationPolicy)
                 self.savedActivationPolicy = nil
@@ -117,6 +128,7 @@ final class OverlayWindowManager: OverlayCommanding {
     private func installBackdoorMonitor() {
         removeBackdoorMonitor()
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.isARepeat { return event }
             if EscapeChord.isBackdoorUnlock(keyCode: Int64(event.keyCode), flags: CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))) {
                 self?.onBackdoor?()
                 return nil
