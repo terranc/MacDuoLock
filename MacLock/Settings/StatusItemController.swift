@@ -21,6 +21,12 @@ final class StatusItemController: NSObject {
     func refresh() {
         let state = gate?.state ?? .disarmed
         applyButtonImage(for: state)
+        item?.menu = makeMenu(for: state)
+    }
+
+    /// Split out from `refresh()` so the key equivalents can be asserted without
+    /// standing up a real status item.
+    func makeMenu(for state: GateState) -> NSMenu {
         let menu = NSMenu()
         menu.addItem(statusHeader(state))
         menu.addItem(.separator())
@@ -34,8 +40,11 @@ final class StatusItemController: NSObject {
         menu.addItem(item(NSLocalizedString("maclock.menu.detect", comment: ""), "iphone", #selector(detectPhone)))
         menu.addItem(item(NSLocalizedString("maclock.menu.settings", comment: ""), "gearshape", #selector(settings)))
         menu.addItem(.separator())
-        menu.addItem(item(NSLocalizedString("maclock.menu.quit", comment: ""), "xmark.circle", #selector(quit)))
-        item?.menu = menu
+        let quitItem = item(NSLocalizedString("maclock.menu.quit", comment: ""), "xmark.circle", #selector(quit))
+        quitItem.keyEquivalent = "q"
+        quitItem.keyEquivalentModifierMask = .command
+        menu.addItem(quitItem)
+        return menu
     }
 
     private func applyButtonImage(for state: GateState) {

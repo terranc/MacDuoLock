@@ -251,6 +251,18 @@ final class OverlayWindowManagerTests: XCTestCase {
         return found
     }
 
+    func testStatusMenuCarriesQuitAndLockKeyEquivalents() {
+        let menu = StatusItemController().makeMenu(for: .monitoring)
+        let quitItem = menu.items.first { $0.keyEquivalent == "q" }
+        XCTAssertNotNil(quitItem, "quit item must advertise ⌘Q")
+        XCTAssertEqual(quitItem?.keyEquivalentModifierMask, .command)
+
+        let shortcut = LockShortcutStore.current
+        let lockItem = menu.items.first { $0.keyEquivalent == shortcut.keyEquivalent }
+        XCTAssertNotNil(lockItem, "lock item must advertise the configured chord")
+        XCTAssertEqual(lockItem?.keyEquivalentModifierMask, shortcut.cocoaModifiers)
+    }
+
     /// These two windows are laid out entirely in code and cannot be eyeballed in
     /// CI, so assert they resolve to a sane size instead of collapsing to zero.
     func testSettingsAndOnboardingProduceSaneLayouts() {

@@ -69,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.onLockNow = { [weak self] in self?.lockNow() }
         statusItem.onDetectPhone = { [weak self] in Task { await self?.detectPhone() } }
         statusItem.onSettings = { [weak self] in self?.openSettings() }
-        statusItem.onQuit = { [weak self] in self?.quitFromMenu() }
+        statusItem.onQuit = { [weak self] in self?.requestQuit() }
         statusItem.install(gate: gate)
 
         let snapshot = sessionSnapshot()
@@ -184,12 +184,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             gate.autoDismissOnPresenceWhileShielded = true
             alert(
                 NSLocalizedString("maclock.detect.title", comment: ""),
-                NSLocalizedString("maclock.detect.found", comment: "")
+                NSLocalizedString("maclock.detect.found", comment: ""),
+                symbol: "checkmark.circle.fill"
             )
         } else if !silentIfNone {
             alert(
                 NSLocalizedString("maclock.detect.title", comment: ""),
-                NSLocalizedString("maclock.detect.failed", comment: "")
+                NSLocalizedString("maclock.detect.failed", comment: ""),
+                symbol: "xmark.circle.fill"
             )
         }
         statusItem.refresh()
@@ -225,18 +227,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.presentationOptions = []
     }
 
-    private func quitFromMenu() {
+    /// The single quit path, shared by ⌘Q, the app menu's Quit item and the
+    /// status-menu item. Going through `NSApp.terminate` alone is not enough:
+    /// `applicationShouldTerminate` cancels a bare terminate while armed, which
+    /// is what made ⌘Q look broken.
+    func requestQuit() {
+        // Quitting while the shield is up would dismiss the overlay without a
+        // password. The event tap already swallows ⌘Q there; this is the backstop.
+        guard gate.state != .shielded else {
+            NSSound.beep()
+            MacLockLog.file("quit refused while shielded")
+            return
+        }
         quitIntent = .unregisterAndQuit
         positivelyDisarmedOrUnregistered = true
         NSApp.terminate(nil)
     }
 
-    private func alert(_ title: String, _ message: String) {
+    private func alert(_ title: String, _ message: String, symbol: String) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = message
+        let config = NSImage.SymbolConfiguration(pointSize: 32, weight: .regular)
+        if let icon = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
+            .withSymbolConfiguration(config) {
+            icon.isTemplate = true
+            alert.icon = icon
+        }
         alert.runModal()
         if gate.armed {
             NSApp.setActivationPolicy(.accessory)
