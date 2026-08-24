@@ -251,6 +251,25 @@ final class OverlayWindowManagerTests: XCTestCase {
         return found
     }
 
+    func testDetectMenuDisabledAndRelabeledWhileDetecting() {
+        let idle = StatusItemController().makeMenu(for: .unlocked, detecting: false)
+        let idleDetect = idle.items.first {
+            $0.title == NSLocalizedString("maclock.menu.detect", comment: "")
+        }
+        XCTAssertNotNil(idleDetect)
+        XCTAssertTrue(idleDetect?.isEnabled ?? false)
+
+        let busy = StatusItemController().makeMenu(for: .unlocked, detecting: true)
+        let busyDetect = busy.items.first {
+            $0.title == NSLocalizedString("maclock.menu.detect.busy", comment: "")
+        }
+        XCTAssertNotNil(busyDetect)
+        XCTAssertFalse(busyDetect?.isEnabled ?? true)
+        XCTAssertNil(idle.items.first {
+            $0.title == NSLocalizedString("maclock.menu.detect.busy", comment: "")
+        })
+    }
+
     func testStatusMenuCarriesQuitAndLockKeyEquivalents() {
         let menu = StatusItemController().makeMenu(for: .monitoring)
         let quitItem = menu.items.first { $0.keyEquivalent == "q" }
@@ -296,5 +315,44 @@ final class OverlayWindowManagerTests: XCTestCase {
         XCTAssertGreaterThan(content.fittingSize.height, 250)
         // The window must hug its content: no dead band under the form.
         XCTAssertEqual(content.frame.height, content.fittingSize.height, accuracy: 1)
+    }
+
+    /// A grouped SwiftUI Form is a scroll view underneath, so an imposed height
+    /// leaves a visible scroller. Assert the content actually fits.
+    func testSettingsWindowFitsWithoutScrolling() {
+        let secrets = GateSecretsStore(keychain: FakeKeychain())
+        let passwords = PasswordStore(secrets: secrets, clock: FakeClock())
+        let gate = SessionGate(
+            secrets: secrets,
+            overlay: OverlaySpy(),
+            tap: TapSpy(),
+            presence: PresenceSpy(),
+            clock: FakeClock()
+        )
+        let flow = OnboardingFlow(passwords: passwords, secrets: secrets, gate: gate)
+        let settings = SettingsContentViewController(
+            flow: flow,
+            loginItems: LoginItemService(),
+            tap: EventTapController()
+        )
+        let window = NSWindow(contentViewController: settings)
+        window.layoutIfNeeded()
+        settings.view.layoutSubtreeIfNeeded()
+
+        let scrollViews = Self.descendants(of: settings.view).compactMap { $0 as? NSScrollView }
+        XCTAssertFalse(scrollViews.isEmpty, "expected the grouped form's scroll view to exist")
+        for scrollView in scrollViews {
+            let document = scrollView.documentView?.frame.height ?? 0
+            let clip = scrollView.contentView.bounds.height
+            print("[settings] doc=\(document) clip=\(clip) window=\(window.frame.size)")
+            XCTAssertLessThanOrEqual(
+                document, clip + 1,
+                "settings content overflows its window, so a scroller appears"
+            )
+        }
+    }
+
+    private static func descendants(of view: NSView) -> [NSView] {
+        view.subviews + view.subviews.flatMap { descendants(of: $0) }
     }
 }

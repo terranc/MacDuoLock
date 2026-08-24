@@ -29,6 +29,7 @@
 "maclock.menu.settings" = "设置";
 "maclock.menu.locknow" = "立即锁定";
 "maclock.menu.detect" = "检测 iPhone";
+"maclock.menu.detect.busy" = "检测中…";
 "maclock.menu.quit" = "退出 MacLock";
 "maclock.menu.status.disarmed" = "未布防";
 "maclock.menu.status.monitoring" = "等待系统解锁";

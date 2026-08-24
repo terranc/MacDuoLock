@@ -8,6 +8,11 @@ final class StatusItemController: NSObject {
     var onDetectPhone: (() -> Void)?
     var onSettings: (() -> Void)?
     var onQuit: (() -> Void)?
+    var isDetecting = false {
+        didSet {
+            if oldValue != isDetecting { refresh() }
+        }
+    }
 
     func install(gate: SessionGate) {
         self.gate = gate
@@ -21,12 +26,12 @@ final class StatusItemController: NSObject {
     func refresh() {
         let state = gate?.state ?? .disarmed
         applyButtonImage(for: state)
-        item?.menu = makeMenu(for: state)
+        item?.menu = makeMenu(for: state, detecting: isDetecting)
     }
 
     /// Split out from `refresh()` so the key equivalents can be asserted without
     /// standing up a real status item.
-    func makeMenu(for state: GateState) -> NSMenu {
+    func makeMenu(for state: GateState, detecting: Bool = false) -> NSMenu {
         let menu = NSMenu()
         menu.addItem(statusHeader(state))
         menu.addItem(.separator())
@@ -37,7 +42,12 @@ final class StatusItemController: NSObject {
         lock.keyEquivalent = shortcut.keyEquivalent
         lock.keyEquivalentModifierMask = shortcut.cocoaModifiers
         menu.addItem(lock)
-        menu.addItem(item(NSLocalizedString("maclock.menu.detect", comment: ""), "iphone", #selector(detectPhone)))
+        let detectTitle = detecting
+            ? NSLocalizedString("maclock.menu.detect.busy", comment: "")
+            : NSLocalizedString("maclock.menu.detect", comment: "")
+        let detectItem = item(detectTitle, "iphone", #selector(detectPhone))
+        detectItem.isEnabled = !detecting
+        menu.addItem(detectItem)
         menu.addItem(item(NSLocalizedString("maclock.menu.settings", comment: ""), "gearshape", #selector(settings)))
         menu.addItem(.separator())
         let quitItem = item(NSLocalizedString("maclock.menu.quit", comment: ""), "xmark.circle", #selector(quit))
@@ -97,7 +107,17 @@ final class StatusItemController: NSObject {
     }
 
     @objc private func lockNow() { onLockNow?() }
-    @objc private func detectPhone() { onDetectPhone?() }
+    @objc private func detectPhone() {
+        guard !isDetecting else { return }
+        onDetectPhone?()
+    }
     @objc private func settings() { onSettings?() }
     @objc private func quit() { onQuit?() }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(detectPhone) {
+            return !isDetecting
+        }
+        return menuItem.action != nil
+    }
 }

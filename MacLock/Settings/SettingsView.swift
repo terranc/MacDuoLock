@@ -231,7 +231,6 @@ struct SettingsRootView: View {
 
     private enum Metrics {
         static let width: CGFloat = 480
-        static let height: CGFloat = 440
         static let fieldWidth: CGFloat = 170
     }
 
@@ -242,7 +241,13 @@ struct SettingsRootView: View {
             generalSection
         }
         .formStyle(.grouped)
-        .frame(width: Metrics.width, height: Metrics.height)
+        // A grouped Form is a scroll view underneath. The content is short and
+        // fixed, so take its ideal height and let the window size to it rather
+        // than imposing a height that leaves a scroller behind.
+        .scrollDisabled(true)
+        .scrollIndicators(.never)
+        .frame(width: Metrics.width)
+        .fixedSize(horizontal: false, vertical: true)
         .onAppear { model.refresh() }
     }
 

@@ -171,6 +171,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func detectPhone(silentIfNone: Bool = false) async {
+        if statusItem.isDetecting { return }
+        statusItem.isDetecting = true
+        defer { statusItem.isDetecting = false }
         let report = await PresenceDiagnostics.report(requestIfNeeded: true)
         MacLockLog.presence.info("\(report, privacy: .public)")
         gate.cameraAuthorized = Permissions.cameraAuthorized()
@@ -256,9 +259,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             icon.isTemplate = true
             alert.icon = icon
         }
+        alert.layout()
+        centerAlertLabels(in: alert.window)
         alert.runModal()
         if gate.armed {
             NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    private func centerAlertLabels(in window: NSWindow) {
+        func walk(_ view: NSView) {
+            if let field = view as? NSTextField, !field.isEditable {
+                field.alignment = .center
+            }
+            view.subviews.forEach(walk)
+        }
+        if let content = window.contentView {
+            walk(content)
         }
     }
 

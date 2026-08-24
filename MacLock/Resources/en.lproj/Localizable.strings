@@ -29,6 +29,7 @@
 "maclock.menu.settings" = "Settings";
 "maclock.menu.locknow" = "Lock now";
 "maclock.menu.detect" = "Detect iPhone";
+"maclock.menu.detect.busy" = "Detecting…";
 "maclock.menu.quit" = "Quit MacLock";
 "maclock.menu.status.disarmed" = "Disarmed";
 "maclock.menu.status.monitoring" = "Waiting for unlock";
