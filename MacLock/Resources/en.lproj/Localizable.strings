@@ -5,6 +5,7 @@
 "maclock.keychain.waiting" = "Reading Keychain…";
 "maclock.unlock.prompt" = "Enter your MacLock password";
 "maclock.unlock.wrong" = "Incorrect password";
+"maclock.unlock.lockedout" = "Too many attempts. Try again in %ld seconds.";
 "maclock.unlock.nosecret" = "No password in Keychain. Set it again from Settings.";
 "maclock.unlock.malformed" = "Password record is damaged. Set it again from Settings.";
 
@@ -48,6 +49,7 @@
 "maclock.settings.password.new" = "New password";
 "maclock.settings.password.update" = "Update password";
 "maclock.settings.password.updated" = "Password updated";
+"maclock.settings.password.verifyfailed" = "Password was written but failed an immediate check. Try again.";
 "maclock.settings.shortcut.recording" = "Press the new shortcut…";
 "maclock.settings.shortcut.reset" = "Restore default";
 "maclock.settings.shortcut.hint" = "Press this combination anywhere to lock or unlock. It must include at least ⌃, ⌥, or ⌘.";

@@ -132,9 +132,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .accepted:
             gate.handle(.passwordVerified)
             overlay.passwordPanel.field.stringValue = ""
-        case .rejected, .lockedOut:
+        case .rejected:
             gate.handle(.passwordRejected)
             overlay.passwordPanel.showError(NSLocalizedString("maclock.unlock.wrong", comment: ""))
+        case .lockedOut(let remaining):
+            gate.handle(.passwordRejected)
+            overlay.passwordPanel.showError(
+                String(
+                    format: NSLocalizedString("maclock.unlock.lockedout", comment: ""),
+                    Int(remaining.rounded(.up))
+                )
+            )
         case .notSet:
             overlay.passwordPanel.showError(NSLocalizedString("maclock.unlock.nosecret", comment: ""))
         case .keychainUnavailable:

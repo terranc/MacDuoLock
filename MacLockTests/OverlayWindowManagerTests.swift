@@ -438,6 +438,10 @@ final class OverlayWindowManagerTests: XCTestCase {
     }
 
     private func makeSettingsModel() -> SettingsModel {
+        SettingsModel(flow: makeOnboardingFlow(), loginItems: LoginItemService(), tap: EventTapController())
+    }
+
+    private func makeOnboardingFlow() -> OnboardingFlow {
         let secrets = GateSecretsStore(keychain: FakeKeychain())
         let passwords = PasswordStore(secrets: secrets, clock: FakeClock())
         let gate = SessionGate(
@@ -447,8 +451,28 @@ final class OverlayWindowManagerTests: XCTestCase {
             presence: PresenceSpy(),
             clock: FakeClock()
         )
-        let flow = OnboardingFlow(passwords: passwords, secrets: secrets, gate: gate)
-        return SettingsModel(flow: flow, loginItems: LoginItemService(), tap: EventTapController())
+        return OnboardingFlow(passwords: passwords, secrets: secrets, gate: gate)
+    }
+
+    /// Regression: `NSWindow(contentViewController:)` adopts the SwiftUI size
+    /// only on the next layout pass. Centring before that placed a near-zero
+    /// frame at the screen centre, and the window grew up and right from there.
+    func testSettingsWindowIsCentredOnItsScreenAtInit() throws {
+        let screen = try XCTUnwrap(NSScreen.active, "no display available")
+        let content = SettingsContentViewController(
+            flow: makeOnboardingFlow(),
+            loginItems: LoginItemService(),
+            tap: EventTapController()
+        )
+        let controller = SettingsWindowController(content: content)
+        let window = try XCTUnwrap(controller.window)
+
+        XCTAssertGreaterThan(window.frame.width, 400, "window must already carry its real width")
+        XCTAssertGreaterThan(window.frame.height, 300, "window must already carry its real height")
+
+        let expected = NSWindow.centeredOrigin(for: window.frame.size, in: screen.visibleFrame)
+        XCTAssertEqual(window.frame.origin.x, expected.x, accuracy: 2)
+        XCTAssertEqual(window.frame.origin.y, expected.y, accuracy: 2)
     }
 
     /// Regression: the fields are cleared on success, which fires SwiftUI's

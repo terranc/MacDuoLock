@@ -154,6 +154,7 @@ final class PasswordStoreTests: XCTestCase {
         model.confirmPassword = "new-new-new"
         await model.updatePassword()
         XCTAssertFalse(model.passwordFailed, model.passwordMessage)
+        XCTAssertEqual(model.passwordMessage, NSLocalizedString("maclock.settings.password.updated", comment: ""))
         let old = await passwords.verify("old-old-old")
         let new = await passwords.verify("new-new-new")
         XCTAssertEqual(old, .rejected)

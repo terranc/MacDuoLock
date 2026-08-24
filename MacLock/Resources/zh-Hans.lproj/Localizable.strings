@@ -5,6 +5,7 @@
 "maclock.keychain.waiting" = "正在读取钥匙串…";
 "maclock.unlock.prompt" = "请输入 MacLock 口令";
 "maclock.unlock.wrong" = "口令不正确";
+"maclock.unlock.lockedout" = "尝试次数过多，请 %ld 秒后再试";
 "maclock.unlock.nosecret" = "钥匙串里没有口令记录，请在设置里重新设置口令";
 "maclock.unlock.malformed" = "口令记录损坏，请在设置里重新设置口令";
 
@@ -48,6 +49,7 @@
 "maclock.settings.password.new" = "新口令";
 "maclock.settings.password.update" = "更新口令";
 "maclock.settings.password.updated" = "口令已更新";
+"maclock.settings.password.verifyfailed" = "口令已写入，但立刻校验失败。请再试一次。";
 "maclock.settings.shortcut.recording" = "按下新的快捷键…";
 "maclock.settings.shortcut.reset" = "恢复默认";
 "maclock.settings.shortcut.hint" = "在任意界面按下该组合键即可锁定或解锁，至少需要包含 ⌃、⌥ 或 ⌘。";

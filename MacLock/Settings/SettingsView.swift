@@ -90,6 +90,56 @@ final class ShortcutRecorderView: NSView {
     }
 }
 
+/// AppKit field so settings writes the same `stringValue` the shield later
+/// verifies. SwiftUI `SecureField` on macOS can bind a different string than
+/// the bullets on screen (IME / uncommitted editor).
+struct MacSecureField: NSViewRepresentable {
+    @Binding var text: String
+    var onSubmit: (() -> Void)?
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeNSView(context: Context) -> NSSecureTextField {
+        let field = NSSecureTextField(string: text)
+        field.delegate = context.coordinator
+        field.target = context.coordinator
+        field.action = #selector(Coordinator.enter)
+        field.bezelStyle = .roundedBezel
+        field.font = .systemFont(ofSize: NSFont.systemFontSize)
+        field.cell?.sendsActionOnEndEditing = false
+        field.usesSingleLineMode = true
+        context.coordinator.field = field
+        return field
+    }
+
+    func updateNSView(_ nsView: NSSecureTextField, context: Context) {
+        context.coordinator.parent = self
+        if nsView.currentEditor() == nil, nsView.stringValue != text {
+            nsView.stringValue = text
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        var parent: MacSecureField
+        weak var field: NSSecureTextField?
+        init(_ parent: MacSecureField) { self.parent = parent }
+
+        func controlTextDidChange(_ obj: Notification) {
+            parent.text = (obj.object as? NSTextField)?.stringValue ?? ""
+        }
+
+        func controlTextDidEndEditing(_ obj: Notification) {
+            parent.text = (obj.object as? NSTextField)?.stringValue ?? ""
+        }
+
+        @objc func enter() {
+            field?.validateEditing()
+            if let field { parent.text = field.stringValue }
+            parent.onSubmit?()
+        }
+    }
+}
+
 struct ShortcutRecorder: NSViewRepresentable {
     var shortcut: LockShortcut
     var onCapture: (LockShortcut) -> Void
@@ -150,8 +200,17 @@ final class SettingsModel: ObservableObject {
         isUpdating = true
         defer { isUpdating = false }
         NSApp.keyWindow?.endEditing(for: nil)
+        let candidate = newPassword
+        let confirm = confirmPassword
         do {
-            try await flow.complete(password: newPassword, confirm: confirmPassword)
+            try await flow.complete(password: candidate, confirm: confirm)
+            MacLockLog.file("password set len=\(candidate.count)")
+            let check = await flow.passwords.verify(candidate)
+            guard check == .accepted else {
+                passwordFailed = true
+                passwordMessage = NSLocalizedString("maclock.settings.password.verifyfailed", comment: "")
+                return
+            }
             newPassword = ""
             confirmPassword = ""
             passwordFailed = false
@@ -264,17 +323,16 @@ struct SettingsRootView: View {
     private var passwordSection: some View {
         Section {
             LabeledContent(NSLocalizedString("maclock.settings.password.new", comment: "")) {
-                SecureField("", text: $model.newPassword)
-                    .labelsHidden()
-                    .frame(width: Metrics.fieldWidth)
+                MacSecureField(text: $model.newPassword)
+                    .frame(width: Metrics.fieldWidth, height: 22)
                     .onChange(of: model.newPassword) { model.noteEdit() }
             }
             LabeledContent(NSLocalizedString("maclock.password.confirm", comment: "")) {
-                SecureField("", text: $model.confirmPassword)
-                    .labelsHidden()
-                    .frame(width: Metrics.fieldWidth)
-                    .onSubmit { Task { await model.updatePassword() } }
-                    .onChange(of: model.confirmPassword) { model.noteEdit() }
+                MacSecureField(text: $model.confirmPassword, onSubmit: {
+                    Task { await model.updatePassword() }
+                })
+                .frame(width: Metrics.fieldWidth, height: 22)
+                .onChange(of: model.confirmPassword) { model.noteEdit() }
             }
             LabeledContent {
                 Button(NSLocalizedString("maclock.settings.password.update", comment: "")) {
@@ -390,6 +448,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.title = NSLocalizedString("maclock.menu.settings", comment: "")
         super.init(window: window)
         window.delegate = self
+        // `NSWindow(contentViewController:)` only adopts the SwiftUI content's
+        // size on the next layout pass. Centring before that would place a
+        // near-zero frame at the screen centre, and the window would then grow
+        // up and to the right from that point — so force the size first.
+        content.view.layoutSubtreeIfNeeded()
+        window.setContentSize(content.view.fittingSize)
         window.centerOnActiveScreen()
     }
 
