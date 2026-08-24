@@ -167,6 +167,15 @@ final class SettingsModel: ObservableObject {
         passwordFailed = false
     }
 
+    /// Called from the fields' `onChange`. Resetting the fields after a
+    /// successful save also fires `onChange`, and that must not wipe the
+    /// confirmation the user just earned — so only a non-empty field counts as
+    /// a real edit.
+    func noteEdit() {
+        guard !newPassword.isEmpty || !confirmPassword.isEmpty else { return }
+        clearPasswordMessage()
+    }
+
     func capture(_ captured: LockShortcut) {
         LockShortcutStore.save(captured)
         shortcut = captured
@@ -257,14 +266,14 @@ struct SettingsRootView: View {
                 SecureField("", text: $model.newPassword)
                     .labelsHidden()
                     .frame(width: Metrics.fieldWidth)
-                    .onChange(of: model.newPassword) { model.clearPasswordMessage() }
+                    .onChange(of: model.newPassword) { model.noteEdit() }
             }
             LabeledContent(NSLocalizedString("maclock.password.confirm", comment: "")) {
                 SecureField("", text: $model.confirmPassword)
                     .labelsHidden()
                     .frame(width: Metrics.fieldWidth)
                     .onSubmit { Task { await model.updatePassword() } }
-                    .onChange(of: model.confirmPassword) { model.clearPasswordMessage() }
+                    .onChange(of: model.confirmPassword) { model.noteEdit() }
             }
             LabeledContent {
                 Button(NSLocalizedString("maclock.settings.password.update", comment: "")) {
@@ -284,9 +293,15 @@ struct SettingsRootView: View {
             Text(NSLocalizedString("maclock.settings.section.password", comment: ""))
         } footer: {
             if !model.passwordMessage.isEmpty {
-                Text(model.passwordMessage)
-                    .font(.callout)
-                    .foregroundStyle(model.passwordFailed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                Label {
+                    Text(model.passwordMessage)
+                } icon: {
+                    Image(systemName: model.passwordFailed
+                        ? "exclamationmark.triangle.fill"
+                        : "checkmark.circle.fill")
+                }
+                .font(.callout)
+                .foregroundStyle(model.passwordFailed ? AnyShapeStyle(.red) : AnyShapeStyle(.green))
             }
         }
     }
@@ -384,26 +399,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 }
 
-/// Backs the SwiftUI `Settings` scene (⌘,) with the same view the status-bar
-/// menu opens, so there is only one settings surface.
+/// The `Settings` scene exists only because `App` requires a scene. ⌘, is
+/// redirected in `MacLockApp` to `AppDelegate.openSettings()`, which raises the
+/// AppKit window above — so there is exactly one settings surface and this
+/// content is never presented.
 struct SettingsView: View {
-    @State private var model: SettingsModel?
-
     var body: some View {
-        Group {
-            if let model {
-                SettingsRootView(model: model)
-            } else {
-                Color.clear.frame(width: 480, height: 440)
-            }
-        }
-        .onAppear {
-            guard model == nil,
-                  let delegate = NSApp.delegate as? AppDelegate,
-                  let flow = delegate.onboarding else { return }
-            let created = SettingsModel(flow: flow, loginItems: delegate.loginItems, tap: delegate.tap)
-            created.onShortcutChanged = { delegate.statusItem.refresh() }
-            model = created
-        }
+        Color.clear.frame(width: 1, height: 1)
     }
 }

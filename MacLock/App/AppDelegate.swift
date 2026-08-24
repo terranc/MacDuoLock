@@ -170,10 +170,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.refresh()
     }
 
+    private var detectInFlight = false
+
     private func detectPhone(silentIfNone: Bool = false) async {
-        if statusItem.isDetecting { return }
+        if detectInFlight { return }
+        detectInFlight = true
         statusItem.isDetecting = true
-        defer { statusItem.isDetecting = false }
+        defer {
+            detectInFlight = false
+            statusItem.isDetecting = false
+        }
         let report = await PresenceDiagnostics.report(requestIfNeeded: true)
         MacLockLog.presence.info("\(report, privacy: .public)")
         gate.cameraAuthorized = Permissions.cameraAuthorized()

@@ -251,23 +251,63 @@ final class OverlayWindowManagerTests: XCTestCase {
         return found
     }
 
+    func testDetectMenuRowMatchesSystemItemMetrics() throws {
+        let menu = StatusItemController().makeMenu(for: .unlocked, detecting: false)
+        let row = try XCTUnwrap(menu.items.first { $0.view != nil }?.view)
+        XCTAssertEqual(row.frame.height, 24)
+        row.setFrameSize(NSSize(width: 206, height: 24))
+        row.layoutSubtreeIfNeeded()
+        let icon = try XCTUnwrap(row.subviews.first { $0 is NSImageView })
+        let title = try XCTUnwrap(row.subviews.first { $0 is NSTextField })
+        XCTAssertEqual(icon.frame, NSRect(x: 16, y: 5.5, width: 14, height: 13))
+        XCTAssertEqual(title.frame.origin.x, 34)
+        XCTAssertEqual(title.frame.origin.y, 4)
+        XCTAssertEqual(title.frame.height, 16)
+    }
+
     func testDetectMenuDisabledAndRelabeledWhileDetecting() {
         let idle = StatusItemController().makeMenu(for: .unlocked, detecting: false)
+        XCTAssertFalse(idle.autoenablesItems)
         let idleDetect = idle.items.first {
             $0.title == NSLocalizedString("maclock.menu.detect", comment: "")
         }
         XCTAssertNotNil(idleDetect)
+        XCTAssertNotNil(idleDetect?.view, "custom view keeps the status menu open on click")
         XCTAssertTrue(idleDetect?.isEnabled ?? false)
 
         let busy = StatusItemController().makeMenu(for: .unlocked, detecting: true)
+        XCTAssertFalse(busy.autoenablesItems)
         let busyDetect = busy.items.first {
             $0.title == NSLocalizedString("maclock.menu.detect.busy", comment: "")
         }
         XCTAssertNotNil(busyDetect)
+        XCTAssertNotNil(busyDetect?.view)
         XCTAssertFalse(busyDetect?.isEnabled ?? true)
         XCTAssertNil(idle.items.first {
             $0.title == NSLocalizedString("maclock.menu.detect.busy", comment: "")
         })
+    }
+
+    func testDetectingMutatesExistingMenuItemInPlace() {
+        let controller = StatusItemController()
+        let menu = controller.makeMenu(for: .unlocked, detecting: false)
+        let detect = menu.items.first {
+            $0.title == NSLocalizedString("maclock.menu.detect", comment: "")
+        }
+        XCTAssertNotNil(detect)
+        XCTAssertTrue(detect?.isEnabled ?? false)
+
+        controller.isDetecting = true
+        XCTAssertTrue(detect === menu.items.first {
+            $0.title == NSLocalizedString("maclock.menu.detect.busy", comment: "")
+        })
+        XCTAssertEqual(detect?.title, NSLocalizedString("maclock.menu.detect.busy", comment: ""))
+        XCTAssertFalse(detect?.isEnabled ?? true)
+        XCTAssertFalse(menu.autoenablesItems)
+
+        controller.isDetecting = false
+        XCTAssertEqual(detect?.title, NSLocalizedString("maclock.menu.detect", comment: ""))
+        XCTAssertTrue(detect?.isEnabled ?? false)
     }
 
     func testStatusMenuCarriesQuitAndLockKeyEquivalents() {
@@ -280,6 +320,10 @@ final class OverlayWindowManagerTests: XCTestCase {
         let lockItem = menu.items.first { $0.keyEquivalent == shortcut.keyEquivalent }
         XCTAssertNotNil(lockItem, "lock item must advertise the configured chord")
         XCTAssertEqual(lockItem?.keyEquivalentModifierMask, shortcut.cocoaModifiers)
+
+        let settingsItem = menu.items.first { $0.keyEquivalent == "," }
+        XCTAssertNotNil(settingsItem, "settings item must advertise ⌘,")
+        XCTAssertEqual(settingsItem?.keyEquivalentModifierMask, .command)
     }
 
     /// These two windows are laid out entirely in code and cannot be eyeballed in
@@ -354,5 +398,51 @@ final class OverlayWindowManagerTests: XCTestCase {
 
     private static func descendants(of view: NSView) -> [NSView] {
         view.subviews + view.subviews.flatMap { descendants(of: $0) }
+    }
+
+    private func makeSettingsModel() -> SettingsModel {
+        let secrets = GateSecretsStore(keychain: FakeKeychain())
+        let passwords = PasswordStore(secrets: secrets, clock: FakeClock())
+        let gate = SessionGate(
+            secrets: secrets,
+            overlay: OverlaySpy(),
+            tap: TapSpy(),
+            presence: PresenceSpy(),
+            clock: FakeClock()
+        )
+        let flow = OnboardingFlow(passwords: passwords, secrets: secrets, gate: gate)
+        return SettingsModel(flow: flow, loginItems: LoginItemService(), tap: EventTapController())
+    }
+
+    /// Regression: the fields are cleared on success, which fires SwiftUI's
+    /// onChange and used to wipe the confirmation before it was ever drawn.
+    func testSuccessMessageSurvivesTheProgrammaticFieldReset() async {
+        let model = makeSettingsModel()
+        model.newPassword = "abcd"
+        model.confirmPassword = "abcd"
+        await model.updatePassword()
+
+        XCTAssertFalse(model.passwordFailed)
+        XCTAssertFalse(model.passwordMessage.isEmpty, "a successful update must report success")
+        XCTAssertEqual(model.newPassword, "")
+        XCTAssertEqual(model.confirmPassword, "")
+
+        // Both fields changed, so onChange fires twice after the reset.
+        model.noteEdit()
+        model.noteEdit()
+        XCTAssertFalse(model.passwordMessage.isEmpty, "the reset must not clear the confirmation")
+    }
+
+    func testTypingAgainClearsTheMessage() async {
+        let model = makeSettingsModel()
+        model.newPassword = "ab"
+        model.confirmPassword = "ab"
+        await model.updatePassword()
+        XCTAssertTrue(model.passwordFailed, "two characters is below the minimum")
+        XCTAssertFalse(model.passwordMessage.isEmpty)
+
+        model.newPassword = "abcd"
+        model.noteEdit()
+        XCTAssertTrue(model.passwordMessage.isEmpty, "a real edit clears the previous message")
     }
 }
