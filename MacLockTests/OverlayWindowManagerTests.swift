@@ -433,6 +433,27 @@ final class OverlayWindowManagerTests: XCTestCase {
         XCTAssertEqual(wide.x, 1920 + (1440 - 2000) / 2, accuracy: 1)
     }
 
+    /// The complaint was a blank Dock tile, so assert the render is actually
+    /// opaque where the art belongs and clear outside the rounded tile.
+    func testDockIconRendersNonBlankAndMatchesStatusSymbols() throws {
+        XCTAssertEqual(StatusItemController.symbolName(for: .shielded), "lock.shield.fill")
+        XCTAssertEqual(StatusItemController.symbolName(for: .disarmed), "shield.slash")
+        XCTAssertEqual(StatusItemController.symbolName(for: .monitoring), "lock.shield")
+
+        let icon = try XCTUnwrap(DockIcon.image(symbol: StatusItemController.symbolName(for: .monitoring)))
+        XCTAssertEqual(icon.size.width, 512, accuracy: 1)
+        XCTAssertEqual(icon.size.height, 512, accuracy: 1)
+
+        var rect = NSRect(origin: .zero, size: icon.size)
+        let cgImage = try XCTUnwrap(icon.cgImage(forProposedRect: &rect, context: nil, hints: nil))
+        let bitmap = NSBitmapImageRep(cgImage: cgImage)
+        let centre = try XCTUnwrap(bitmap.colorAt(x: bitmap.pixelsWide / 2, y: bitmap.pixelsHigh / 2))
+        XCTAssertGreaterThan(centre.alphaComponent, 0.9, "the middle of the icon must not be transparent")
+
+        let corner = try XCTUnwrap(bitmap.colorAt(x: 1, y: 1))
+        XCTAssertLessThan(corner.alphaComponent, 0.1, "outside the rounded tile must stay clear")
+    }
+
     private static func descendants(of view: NSView) -> [NSView] {
         view.subviews + view.subviews.flatMap { descendants(of: $0) }
     }

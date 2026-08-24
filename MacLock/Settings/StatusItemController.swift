@@ -60,16 +60,23 @@ final class StatusItemController: NSObject, NSMenuItemValidation {
     }
 
     private func applyButtonImage(for state: GateState) {
-        let name: String
-        switch state {
-        case .shielded: name = "lock.shield.fill"
-        case .disarmed: name = "shield.slash"
-        default: name = "lock.shield"
-        }
+        let name = Self.symbolName(for: state)
         let image = NSImage(systemSymbolName: name, accessibilityDescription: "MacLock")
         image?.isTemplate = true
         item?.button?.image = image
         item?.button?.toolTip = "MacLock — " + statusTitle(state)
+        // The Dock only shows an icon while a window is up (the app is
+        // LSUIElement), and the bundle ships no AppIcon — so render the same
+        // glyph at Dock size and keep the two in step.
+        NSApp.applicationIconImage = DockIcon.image(symbol: name)
+    }
+
+    static func symbolName(for state: GateState) -> String {
+        switch state {
+        case .shielded: return "lock.shield.fill"
+        case .disarmed: return "shield.slash"
+        default: return "lock.shield"
+        }
     }
 
     /// Disabled header row rendered as small secondary text, the way system
@@ -157,6 +164,61 @@ final class StatusItemController: NSObject, NSMenuItemValidation {
             return !isDetecting
         }
         return menuItem.action != nil
+    }
+}
+
+/// Renders the status-bar glyph at Dock size. A bare template symbol would be a
+/// thin dark shape on a dark Dock, so it sits on a rounded tile the way a real
+/// app icon does.
+enum DockIcon {
+    private static var cache: [String: NSImage] = [:]
+    private static let side: CGFloat = 512
+
+    static func image(symbol: String) -> NSImage? {
+        if let cached = cache[symbol] { return cached }
+        guard let rendered = render(symbol: symbol) else { return nil }
+        cache[symbol] = rendered
+        return rendered
+    }
+
+    private static func render(symbol: String) -> NSImage? {
+        let config = NSImage.SymbolConfiguration(pointSize: 268, weight: .regular)
+        guard let glyph = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
+            .withSymbolConfiguration(config) else { return nil }
+        let white = tinted(glyph, with: .white)
+        let canvas = NSSize(width: side, height: side)
+
+        return NSImage(size: canvas, flipped: false) { _ in
+            // Matches the macOS icon grid: the art sits inside the full canvas.
+            let inset = side * 0.09
+            let tile = NSRect(x: inset, y: inset, width: side - inset * 2, height: side - inset * 2)
+            let path = NSBezierPath(roundedRect: tile, xRadius: side * 0.19, yRadius: side * 0.19)
+            let gradient = NSGradient(
+                starting: NSColor(srgbRed: 0.36, green: 0.56, blue: 0.98, alpha: 1),
+                ending: NSColor(srgbRed: 0.13, green: 0.28, blue: 0.72, alpha: 1)
+            )
+            gradient?.draw(in: path, angle: -90)
+
+            let size = white.size
+            let origin = NSPoint(x: (side - size.width) / 2, y: (side - size.height) / 2)
+            white.draw(
+                in: NSRect(origin: origin, size: size),
+                from: .zero,
+                operation: .sourceOver,
+                fraction: 1
+            )
+            return true
+        }
+    }
+
+    /// SF Symbols arrive as template art; mask a solid fill through its alpha.
+    private static func tinted(_ image: NSImage, with color: NSColor) -> NSImage {
+        NSImage(size: image.size, flipped: false) { rect in
+            color.set()
+            rect.fill()
+            image.draw(in: rect, from: .zero, operation: .destinationIn, fraction: 1)
+            return true
+        }
     }
 }
 
