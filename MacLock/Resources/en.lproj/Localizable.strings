@@ -37,10 +37,12 @@
 "maclock.menu.status.shielded" = "Shielded";
 
 "maclock.detect.title" = "iPhone detection";
-"maclock.detect.found" = "Bound Continuity Camera device: %@\nIf the phone is nearby and Continuity Camera can see it, MacLock can auto-pass after OS unlock; otherwise the overlay password is still required.\nBeing on the same Wi-Fi (for example 192.168.0.9) does not prove the phone is beside the Mac.";
+"maclock.detect.found" = "Detection succeeded";
+"maclock.detect.failed" = "Detection failed. Place your iPhone next to the Mac and try again.";
 
 "maclock.settings.section.password" = "Password";
 "maclock.settings.section.shortcut" = "Lock shortcut";
+"maclock.settings.shortcut.label" = "Shortcut";
 "maclock.settings.section.general" = "General";
 "maclock.settings.password.new" = "New password";
 "maclock.settings.password.update" = "Update password";

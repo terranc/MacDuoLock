@@ -37,10 +37,12 @@
 "maclock.menu.status.shielded" = "遮罩中";
 
 "maclock.detect.title" = "iPhone 检测";
-"maclock.detect.found" = "已绑定连续互通设备：%@\n手机在旁边且能被连续互通相机发现时，解锁后可自动放行；否则仍要口令。\n同一 Wi-Fi（例如 192.168.0.9）不能证明手机在电脑旁边。";
+"maclock.detect.found" = "检测成功";
+"maclock.detect.failed" = "检测失败。请把 iPhone 放在电脑旁边后再试。";
 
 "maclock.settings.section.password" = "口令";
 "maclock.settings.section.shortcut" = "锁定快捷键";
+"maclock.settings.shortcut.label" = "快捷键";
 "maclock.settings.section.general" = "通用";
 "maclock.settings.password.new" = "新口令";
 "maclock.settings.password.update" = "更新口令";

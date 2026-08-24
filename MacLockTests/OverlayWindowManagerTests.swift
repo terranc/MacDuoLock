@@ -270,9 +270,11 @@ final class OverlayWindowManagerTests: XCTestCase {
             loginItems: LoginItemService(),
             tap: EventTapController()
         )
+        // SwiftUI-hosted: assert a plausible box rather than an exact size, so
+        // the test does not break every time the form gains a row.
         let settingsSize = settings.view.fittingSize
-        XCTAssertEqual(settingsSize.width, 468, accuracy: 1)
-        XCTAssertGreaterThan(settingsSize.height, 250)
+        XCTAssertGreaterThan(settingsSize.width, 380)
+        XCTAssertGreaterThan(settingsSize.height, 300)
 
         let onboarding = OnboardingWindowController(flow: flow)
         guard let content = onboarding.window?.contentView else {

@@ -184,10 +184,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             gate.autoDismissOnPresenceWhileShielded = true
             alert(
                 NSLocalizedString("maclock.detect.title", comment: ""),
-                String(format: NSLocalizedString("maclock.detect.found", comment: ""), device.localizedName)
+                NSLocalizedString("maclock.detect.found", comment: "")
             )
         } else if !silentIfNone {
-            alert(NSLocalizedString("maclock.detect.title", comment: ""), report)
+            alert(
+                NSLocalizedString("maclock.detect.title", comment: ""),
+                NSLocalizedString("maclock.detect.failed", comment: "")
+            )
         }
         statusItem.refresh()
     }
