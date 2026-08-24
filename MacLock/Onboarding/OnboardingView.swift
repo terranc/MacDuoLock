@@ -44,7 +44,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         // Size to the content instead of a guessed height, so no dead band is
         // left under the form.
         window.setContentSize(content.fittingSize)
-        window.center()
+        window.centerOnActiveScreen()
         window.initialFirstResponder = passwordField
         window.defaultButtonCell = actionButton.cell as? NSButtonCell
     }

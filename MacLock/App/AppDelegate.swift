@@ -126,6 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func submitSecret(_ text: String) async {
         overlay.passwordPanel.setBusy(true)
         let result = await passwords.verify(text)
+        MacLockLog.file("verify result=\(result) len=\(text.count)")
         overlay.passwordPanel.setBusy(false)
         switch result {
         case .accepted:
@@ -224,6 +225,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
             settingsWindow = controller
+        }
+        // Re-centre on the screen the user is on now, but never yank a window
+        // they already have open and may have moved deliberately.
+        if settingsWindow?.window?.isVisible != true {
+            settingsWindow?.window?.centerOnActiveScreen()
         }
         settingsWindow?.showWindow(nil)
         settingsWindow?.window?.makeKeyAndOrderFront(nil)

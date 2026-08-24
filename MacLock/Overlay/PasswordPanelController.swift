@@ -429,6 +429,12 @@ final class PasswordPanelController: NSViewController {
 
     @objc private func submitClicked() {
         guard !isBusy else { return }
+        if let editor = field.currentEditor() {
+            (editor as? NSTextView)?.unmarkText()
+            field.stringValue = editor.string
+        } else {
+            field.validateEditing()
+        }
         onSubmit?(field.stringValue)
     }
 

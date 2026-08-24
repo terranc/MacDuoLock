@@ -149,6 +149,7 @@ final class SettingsModel: ObservableObject {
     func updatePassword() async {
         isUpdating = true
         defer { isUpdating = false }
+        NSApp.keyWindow?.endEditing(for: nil)
         do {
             try await flow.complete(password: newPassword, confirm: confirmPassword)
             newPassword = ""
@@ -363,7 +364,7 @@ struct SettingsRootView: View {
 /// SwiftUI content in an AppKit window: the modern grouped-form look without
 /// depending on `showSettingsWindow:` to get the window on screen.
 final class SettingsContentViewController: NSHostingController<SettingsRootView> {
-    private let model: SettingsModel
+    let model: SettingsModel
 
     var onShortcutChanged: (() -> Void)? {
         get { model.onShortcutChanged }
@@ -389,7 +390,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.title = NSLocalizedString("maclock.menu.settings", comment: "")
         super.init(window: window)
         window.delegate = self
-        window.center()
+        window.centerOnActiveScreen()
     }
 
     required init?(coder: NSCoder) { nil }

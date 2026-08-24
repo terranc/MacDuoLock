@@ -19,7 +19,7 @@ final class PasswordStore: PasswordStoring {
     }
 
     func verify(_ plaintext: String) async -> PasswordVerifyResult {
-        await verifySecret(plaintext, kind: .password)
+        await verifySecret(Self.normalize(plaintext), kind: .password)
     }
 
     func verifyRecovery(_ plaintext: String) async -> PasswordVerifyResult {
@@ -27,7 +27,7 @@ final class PasswordStore: PasswordStoring {
     }
 
     func setPassword(_ plaintext: String) async throws {
-        try await setSecret(plaintext, accountWriter: secrets.setPasswordRecord)
+        try await setSecret(Self.normalize(plaintext), accountWriter: secrets.setPasswordRecord)
         secrets.setLockout(nil, kind: .password)
     }
 
@@ -45,6 +45,12 @@ final class PasswordStore: PasswordStoring {
         try await setPassword(newPassword)
         try await setRecoveryKey(newRecoveryDisplay)
         secrets.writeCleanDisarm()
+    }
+
+    /// Settings (SwiftUI / IME) and the shield NSSecureTextField can emit
+    /// different Unicode forms of the same visual password. Hash NFC only.
+    private static func normalize(_ plaintext: String) -> String {
+        plaintext.precomposedStringWithCanonicalMapping
     }
 
     private func setSecret(_ plaintext: String, accountWriter: (PasswordRecord) throws -> Void) async throws {

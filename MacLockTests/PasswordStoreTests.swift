@@ -124,6 +124,56 @@ final class PasswordStoreTests: XCTestCase {
         XCTAssertTrue(foreign.isUnavailable)
     }
 
+    func testUnicodePasswordMatchesAcrossNFCAndNFD() async throws {
+        let store = PasswordStore(secrets: GateSecretsStore(keychain: FakeKeychain()), clock: FakeClock())
+        let nfd = "é".decomposedStringWithCanonicalMapping
+        let nfc = "é".precomposedStringWithCanonicalMapping
+        XCTAssertNotEqual(Array(nfd.utf8), Array(nfc.utf8), "precondition: NFD and NFC must differ in bytes")
+        try await store.setPassword("pw-\(nfd)-xx")
+        let viaNFC = await store.verify("pw-\(nfc)-xx")
+        XCTAssertEqual(viaNFC, .accepted, "settings IME and the shield field can emit different Unicode forms of the same character")
+        let viaNFD = await store.verify("pw-\(nfd)-xx")
+        XCTAssertEqual(viaNFD, .accepted)
+    }
+
+    func testSettingsPasswordChangeIsVerifiableOnTheSameStore() async throws {
+        let keychain = FakeKeychain()
+        let secrets = GateSecretsStore(keychain: keychain)
+        let passwords = PasswordStore(secrets: secrets, clock: FakeClock())
+        let gate = SessionGate(
+            secrets: secrets,
+            overlay: OverlaySpy(),
+            tap: TapSpy(),
+            presence: PresenceSpy(),
+            clock: FakeClock()
+        )
+        let flow = OnboardingFlow(passwords: passwords, secrets: secrets, gate: gate)
+        let model = SettingsModel(flow: flow, loginItems: LoginItemService(), tap: EventTapController())
+        try await passwords.setPassword("old-old-old")
+        model.newPassword = "new-new-new"
+        model.confirmPassword = "new-new-new"
+        await model.updatePassword()
+        XCTAssertFalse(model.passwordFailed, model.passwordMessage)
+        let old = await passwords.verify("old-old-old")
+        let new = await passwords.verify("new-new-new")
+        XCTAssertEqual(old, .rejected)
+        XCTAssertEqual(new, .accepted)
+    }
+
+    func testLiveGetPrefersFileStoreOverStaleKeychainCopy() throws {
+        let client = LiveKeychainClient()
+        let account = "gate-test-prefer-file-v1"
+        try? client.delete(account: account)
+        try client.set(account: account, data: Data("stale-keychain".utf8))
+        try FileSecretStore().set(account: account, data: Data("fresh-file".utf8))
+        let got = client.get(account: account)
+        try? client.delete(account: account)
+        guard case .yes(let data) = got else {
+            return XCTFail("expected yes, got \(got)")
+        }
+        XCTAssertEqual(String(data: data, encoding: .utf8), "fresh-file")
+    }
+
     func testLiveKeychainWriteThenReadSameBytes() throws {
         let client = LiveKeychainClient()
         let account = "gate-test-roundtrip-v1"

@@ -119,6 +119,30 @@ final class OverlayWindowManagerTests: XCTestCase {
         XCTAssertTrue(panel.field.isEnabled)
     }
 
+    func testSubmitReadsFieldEditorWhenCellIsStale() {
+        let (panel, window) = makeOffscreenKeyPanel()
+        defer { window.close() }
+        var submitted: String?
+        panel.onSubmit = { submitted = $0 }
+
+        XCTAssertTrue(window.makeFirstResponder(panel.field))
+        pump()
+        guard let editor = panel.field.currentEditor() as? NSTextView else {
+            XCTFail("missing field editor")
+            return
+        }
+        // Real typing lives in the field editor. The cell can lag (IME commit,
+        // layer-backed ancestors), which is what made a just-changed password
+        // look "wrong" on the shield.
+        panel.field.stringValue = ""
+        (panel.field.cell as? NSTextFieldCell)?.stringValue = ""
+        editor.string = "newly-set-password"
+
+        panel.field.sendAction(panel.field.action, to: panel.field.target)
+        pump()
+        XCTAssertEqual(submitted, "newly-set-password")
+    }
+
     func testPasswordFieldAcceptsFocusAndTypingHidesPlaceholder() {
         let (panel, window) = makeOffscreenKeyPanel()
         defer { window.close() }
@@ -396,6 +420,19 @@ final class OverlayWindowManagerTests: XCTestCase {
         }
     }
 
+    func testCenteredOriginUsesTheGivenVisibleFrame() {
+        // A secondary display to the right, with a menu bar / Dock inset.
+        let visible = NSRect(x: 1920, y: 25, width: 1440, height: 830)
+        let origin = NSWindow.centeredOrigin(for: NSSize(width: 480, height: 485), in: visible)
+        XCTAssertEqual(origin.x, 1920 + (1440 - 480) / 2, accuracy: 1)
+        XCTAssertEqual(origin.y, 25 + (830 - 485) / 2, accuracy: 1)
+
+        // Window larger than the screen must not wander off the left edge more
+        // than symmetry demands.
+        let wide = NSWindow.centeredOrigin(for: NSSize(width: 2000, height: 900), in: visible)
+        XCTAssertEqual(wide.x, 1920 + (1440 - 2000) / 2, accuracy: 1)
+    }
+
     private static func descendants(of view: NSView) -> [NSView] {
         view.subviews + view.subviews.flatMap { descendants(of: $0) }
     }
@@ -416,6 +453,50 @@ final class OverlayWindowManagerTests: XCTestCase {
 
     /// Regression: the fields are cleared on success, which fires SwiftUI's
     /// onChange and used to wipe the confirmation before it was ever drawn.
+    func testSettingsSecureFieldsCommitIntoTheModelBeforeSave() async {
+        let secrets = GateSecretsStore(keychain: FakeKeychain())
+        let passwords = PasswordStore(secrets: secrets, clock: FakeClock())
+        let gate = SessionGate(
+            secrets: secrets,
+            overlay: OverlaySpy(),
+            tap: TapSpy(),
+            presence: PresenceSpy(),
+            clock: FakeClock()
+        )
+        let flow = OnboardingFlow(passwords: passwords, secrets: secrets, gate: gate)
+        let settings = SettingsContentViewController(
+            flow: flow,
+            loginItems: LoginItemService(),
+            tap: EventTapController()
+        )
+        let window = NSWindow(contentViewController: settings)
+        window.isReleasedWhenClosed = false
+        window.setFrame(NSRect(x: -2800, y: -2800, width: 520, height: 420), display: true)
+        window.makeKeyAndOrderFront(nil)
+        settings.view.layoutSubtreeIfNeeded()
+        pump()
+        defer { window.close() }
+
+        let fields = Self.descendants(of: settings.view).compactMap { $0 as? NSSecureTextField }
+        XCTAssertGreaterThanOrEqual(fields.count, 2, "new + confirm fields")
+        XCTAssertTrue(window.makeFirstResponder(fields[0]))
+        pump()
+        fields[0].currentEditor()?.insertText("commit-me-now")
+        pump()
+        XCTAssertTrue(window.makeFirstResponder(fields[1]))
+        pump()
+        fields[1].currentEditor()?.insertText("commit-me-now")
+        pump()
+
+        let model = settings.model
+        XCTAssertEqual(model.newPassword, "commit-me-now", "new-password binding lagged the field editor")
+        XCTAssertEqual(model.confirmPassword, "commit-me-now", "confirm binding lagged the field editor")
+        await model.updatePassword()
+        XCTAssertFalse(model.passwordFailed, model.passwordMessage)
+        let verified = await passwords.verify("commit-me-now")
+        XCTAssertEqual(verified, .accepted)
+    }
+
     func testSuccessMessageSurvivesTheProgrammaticFieldReset() async {
         let model = makeSettingsModel()
         model.newPassword = "abcd"

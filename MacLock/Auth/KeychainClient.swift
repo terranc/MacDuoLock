@@ -56,10 +56,13 @@ final class LiveKeychainClient: KeychainClient {
     private let files = FileSecretStore()
 
     func get(account: String) -> KeychainQuery<Data> {
-        let protected = copyMatching(account: account, dataProtection: true)
-        if case .yes = protected { return protected }
+        // `set` always succeeds at the file store; data-protection / classic
+        // copies can be missing or stale. File wins so a settings change is
+        // what the shield verifies against.
         let file = files.get(account: account)
         if case .yes = file { return file }
+        let protected = copyMatching(account: account, dataProtection: true)
+        if case .yes = protected { return protected }
         // File-based keychain ACLs block LSUIElement apps waiting for a hidden
         // Allow sheet. Never query it on the launch path.
         if case .unavailable = protected { return protected }
@@ -86,8 +89,16 @@ final class LiveKeychainClient: KeychainClient {
     }
 
     func set(account: String, data: Data) throws {
-        try? addItem(account: account, data: data, dataProtection: true)
         try files.set(account: account, data: data)
+        try? addItem(account: account, data: data, dataProtection: true)
+        // Older builds wrote the file-based keychain. Leave that copy behind
+        // and `get` would keep verifying the previous password.
+        var classic: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: KeychainAccount.service,
+            kSecAttrAccount as String: account,
+        ]
+        SecItemDelete(classic as CFDictionary)
     }
 
     private func addItem(account: String, data: Data, dataProtection: Bool) throws {
@@ -119,6 +130,8 @@ final class LiveKeychainClient: KeychainClient {
             kSecAttrAccount as String: account,
             kSecUseDataProtectionKeychain as String: true,
         ]
+        SecItemDelete(query as CFDictionary)
+        query.removeValue(forKey: kSecUseDataProtectionKeychain as String)
         SecItemDelete(query as CFDictionary)
         try files.delete(account: account)
     }
