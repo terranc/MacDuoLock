@@ -106,7 +106,7 @@ MacDuoLock 是**桌面应用层的额外隐私遮罩**，不替代 macOS 登录�
 
 ## 从源码构建
 
-需要安装支持 macOS 14 SDK 的 Xcode。工程和 scheme 仍保留 `MacLock` 名称，生成的应用为 `MacDuoLock.app`。
+需要安装 Xcode 16.2 或更新版本，以支持当前工程格式；应用最低支持 macOS 14。工程和 scheme 仍保留 `MacLock` 名称，生成的应用为 `MacDuoLock.app`。
 
 ```sh
 git clone https://github.com/terranc/MacDuoLock.git
