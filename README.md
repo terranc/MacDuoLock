@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="MacLock/Resources/Assets.xcassets/AppIcon.appiconset/icon_256.png" width="128" alt="MacDuoLock 图标">
+  <img src="MacLock/Resources/Assets.xcassets/AppIcon.appiconset/icon_1024.png" width="128" alt="MacDuoLock 图标">
 </p>
 
 # MacDuoLock

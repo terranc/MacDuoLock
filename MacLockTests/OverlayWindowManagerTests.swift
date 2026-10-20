@@ -563,6 +563,11 @@ final class OverlayWindowManagerTests: XCTestCase {
         let centre = try XCTUnwrap(bitmap.colorAt(x: bitmap.pixelsWide / 2, y: bitmap.pixelsHigh / 2))
         XCTAssertGreaterThan(centre.alphaComponent, 0.9, "the middle of the icon must not be transparent")
 
+        let tile = try XCTUnwrap(bitmap.colorAt(x: bitmap.pixelsWide / 2, y: bitmap.pixelsHigh / 5)?.usingColorSpace(.deviceRGB))
+        XCTAssertEqual(tile.redComponent, tile.greenComponent, accuracy: 0.01)
+        XCTAssertEqual(tile.greenComponent, tile.blueComponent, accuracy: 0.01)
+        XCTAssertLessThan(tile.redComponent, 0.2, "the Dock tile must match the charcoal app palette")
+
         let corner = try XCTUnwrap(bitmap.colorAt(x: 1, y: 1))
         XCTAssertLessThan(corner.alphaComponent, 0.1, "outside the rounded tile must stay clear")
     }

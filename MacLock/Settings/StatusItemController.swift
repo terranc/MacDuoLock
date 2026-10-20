@@ -193,8 +193,8 @@ enum DockIcon {
             let tile = NSRect(x: inset, y: inset, width: side - inset * 2, height: side - inset * 2)
             let path = NSBezierPath(roundedRect: tile, xRadius: side * 0.19, yRadius: side * 0.19)
             let gradient = NSGradient(
-                starting: NSColor(srgbRed: 0.36, green: 0.56, blue: 0.98, alpha: 1),
-                ending: NSColor(srgbRed: 0.13, green: 0.28, blue: 0.72, alpha: 1)
+                starting: NSColor(white: 0.16, alpha: 1),
+                ending: NSColor(white: 0.067, alpha: 1)
             )
             gradient?.draw(in: path, angle: -90)
 
