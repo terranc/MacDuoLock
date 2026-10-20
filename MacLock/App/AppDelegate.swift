@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem = StatusItemController()
     var loginItems = LoginItemService()
     var tap = EventTapController()
+    var remote = LiveRemoteSessionDetector()
     var quitIntent: QuitIntent = .none
     var positivelyDisarmedOrUnregistered = false
     private var sigterm: DispatchSourceSignal?
@@ -51,9 +52,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         gate.presenceEnabled = true
         gate.autoDismissOnPresenceWhileShielded = true
-        gate.waitTOnUnlock = false
+        // Show the password shield while Continuity Camera discovery catches up after unlock/wake.
+        gate.waitTOnUnlock = true
         gate.presenceTimeout = 5
+        gate.skipShieldForRemoteSession = RemoteShieldPolicy.isEnabled
         gate.cameraAuthorized = Permissions.cameraAuthorized()
+        gate.isRemoteSessionActive = { [weak self] in self?.remote.isActive ?? false }
+        remote.onChange = { [weak self] active in
+            self?.gate.handle(active ? .remoteSessionBegan : .remoteSessionEnded)
+            self?.statusItem.refresh()
+        }
+        tap.onInjectedEvent = { [weak self] pid in self?.remote.noteInjected(pid: pid) }
+        remote.start()
         if Permissions.cameraStatus() == .notDetermined {
             Task { [weak self] in
                 _ = await Permissions.requestCamera()
@@ -73,6 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.install(gate: gate)
 
         let snapshot = sessionSnapshot()
+        remote.refresh()
         let passwordQ = secrets.passwordQuery()
         _ = secrets.cleanDisarmQuery()
         if passwordQ.isNo {
@@ -91,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         lockMonitor = ScreenLockMonitor(overlay: overlay, gate: gate, snapshotProvider: sessionSnapshot)
+        lockMonitor.refreshRemote = { [weak self] in self?.remote.refresh() }
         lockMonitor.install()
         overlay.passwordPanel.onSubmit = { [weak self] text in
             Task { await self?.submitSecret(text) }
@@ -224,6 +236,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsWindow == nil {
             let content = SettingsContentViewController(flow: onboarding, loginItems: loginItems, tap: tap)
             content.onShortcutChanged = { [weak self] in self?.statusItem.refresh() }
+            content.onSkipRemoteShieldChanged = { [weak self] enabled in
+                self?.gate.skipShieldForRemoteSession = enabled
+            }
             let controller = SettingsWindowController(content: content)
             controller.onClose = { [weak self] in
                 guard let self else { return }

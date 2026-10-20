@@ -1,9 +1,9 @@
 "maclock.submit" = "Unlock";
 "maclock.forgot" = "Forgot password";
-"maclock.password.placeholder" = "MacLock password";
+"maclock.password.placeholder" = "MacDuoLock password";
 "maclock.password.confirm" = "Confirm password";
 "maclock.keychain.waiting" = "Reading Keychain…";
-"maclock.unlock.prompt" = "Enter your MacLock password";
+"maclock.unlock.prompt" = "Enter your MacDuoLock password";
 "maclock.unlock.wrong" = "Incorrect password";
 "maclock.unlock.lockedout" = "Too many attempts. Try again in %ld seconds.";
 "maclock.unlock.nosecret" = "No password in Keychain. Set it again from Settings.";
@@ -14,9 +14,9 @@
 "maclock.recovery.placeholder" = "Recovery key";
 "maclock.recovery.prompt" = "Enter the recovery key to unlock";
 
-"maclock.onboard.title" = "MacLock";
-"maclock.onboard.headline" = "Set your MacLock password";
-"maclock.onboard.clock" = "After every macOS unlock, MacLock shows a password overlay. iPhone detection is off until you enable it later.";
+"maclock.onboard.title" = "MacDuoLock";
+"maclock.onboard.headline" = "Set your MacDuoLock password";
+"maclock.onboard.clock" = "After macOS unlocks, MacDuoLock immediately shows a password screen while checking for your nearby iPhone. Enter your password or wait for automatic unlock.";
 "maclock.onboard.field.password" = "Password";
 "maclock.onboard.continue" = "Continue";
 "maclock.onboard.saved" = "I saved the recovery key";
@@ -26,12 +26,12 @@
 "maclock.error.mismatch" = "The two passwords do not match";
 "maclock.error.keychain" = "Could not write to Keychain (code %ld)";
 
-"maclock.menu.status" = "MacLock";
+"maclock.menu.status" = "MacDuoLock";
 "maclock.menu.settings" = "Settings";
 "maclock.menu.locknow" = "Lock now";
 "maclock.menu.detect" = "Detect iPhone";
 "maclock.menu.detect.busy" = "Detecting…";
-"maclock.menu.quit" = "Quit MacLock";
+"maclock.menu.quit" = "Quit MacDuoLock";
 "maclock.menu.status.disarmed" = "Disarmed";
 "maclock.menu.status.monitoring" = "Waiting for unlock";
 "maclock.menu.status.checking" = "Checking iPhone";
@@ -53,9 +53,15 @@
 "maclock.settings.shortcut.recording" = "Press the new shortcut…";
 "maclock.settings.shortcut.reset" = "Restore default";
 "maclock.settings.shortcut.hint" = "Press this combination anywhere to lock or unlock. It must include at least ⌃, ⌥, or ⌘.";
-"maclock.settings.loginitem" = "Launch MacLock at login";
+"maclock.settings.loginitem" = "Launch MacDuoLock at login";
 "maclock.settings.loginitem.enabled" = "Enabled";
-"maclock.settings.loginitem.approval" = "Allow MacLock in System Settings › General › Login Items";
-"maclock.settings.loginitem.notfound" = "Login item not found. Move MacLock to the Applications folder first.";
+"maclock.settings.loginitem.approval" = "Allow MacDuoLock in System Settings › General › Login Items";
+"maclock.settings.loginitem.notfound" = "Login item not found. Move MacDuoLock to the Applications folder first.";
 "maclock.settings.loginitem.opensettings" = "Open System Settings";
 "maclock.settings.version" = "Version";
+"maclock.settings.remote.skip" = "Skip lock during remote control";
+"maclock.settings.remote.hint" = "Do not show the MacDuoLock overlay while UU Remote, ToDesk, Screen Sharing, or similar software is controlling this Mac. The overlay returns when the session ends.";
+
+"maclock.help.title" = "Unlock help";
+"maclock.help.close" = "Close help";
+"maclock.help.iphone" = "A nearby iPhone signed in to the same Apple Account as this Mac and available for Continuity Camera can unlock automatically. Keep Wi-Fi and Bluetooth on for both devices. You can also enter your password; manual locks require it.";

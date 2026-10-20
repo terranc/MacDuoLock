@@ -4,3 +4,4 @@ dist/
 xcuserdata/
 *.xcuserstate
 .DS_Store
+.doc_hash

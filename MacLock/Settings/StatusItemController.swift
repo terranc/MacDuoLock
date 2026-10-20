@@ -61,13 +61,12 @@ final class StatusItemController: NSObject, NSMenuItemValidation {
 
     private func applyButtonImage(for state: GateState) {
         let name = Self.symbolName(for: state)
-        let image = NSImage(systemSymbolName: name, accessibilityDescription: "MacLock")
+        let image = NSImage(systemSymbolName: name, accessibilityDescription: "MacDuoLock")
         image?.isTemplate = true
         item?.button?.image = image
-        item?.button?.toolTip = "MacLock — " + statusTitle(state)
-        // The Dock only shows an icon while a window is up (the app is
-        // LSUIElement), and the bundle ships no AppIcon — so render the same
-        // glyph at Dock size and keep the two in step.
+        item?.button?.toolTip = "MacDuoLock — " + statusTitle(state)
+        // While a window is up, keep the Dock glyph in step with the menu-bar
+        // status. Finder uses the bundled AppIcon independently of this state.
         NSApp.applicationIconImage = DockIcon.image(symbol: name)
     }
 

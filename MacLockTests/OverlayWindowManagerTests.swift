@@ -8,6 +8,31 @@ final class OverlayWindowManagerTests: XCTestCase {
         _ = NSApplication.shared
     }
 
+    func testShieldsRemainReadableByRemoteCaptureAfterRebuild() {
+        let listing = FakeScreenListing(screens: [
+            // Keep even the ordered windows offscreen; never cover the developer's desktop.
+            ScreenDescriptor(displayID: 1, frame: CGRect(x: -3000, y: -3000, width: 100, height: 80), isPrimary: true),
+            ScreenDescriptor(displayID: 2, frame: CGRect(x: -2900, y: -3000, width: 100, height: 80), isPrimary: false),
+        ])
+        for attachToScreen in [false, true] {
+            let manager = OverlayWindowManager(screens: listing)
+            manager.attachToScreen = attachToScreen
+            defer { manager.dismissSync() }
+
+            manager.present(reason: .passwordOnly)
+            XCTAssertEqual(manager.windows.count, 2)
+            for window in manager.windows {
+                XCTAssertEqual(window.sharingType, .readOnly, "remote capture must include the shield")
+            }
+
+            manager.rebuild()
+            XCTAssertEqual(manager.windows.count, 2)
+            for window in manager.windows {
+                XCTAssertEqual(window.sharingType, .readOnly, "display changes must preserve remote visibility")
+            }
+        }
+    }
+
     func testNScreensCreateNWindowsOnePrimaryKeyable() {
         let listing = FakeScreenListing(screens: [
             ScreenDescriptor(displayID: 1, frame: CGRect(x: 0, y: 0, width: 100, height: 80), isPrimary: true),
@@ -117,6 +142,94 @@ final class OverlayWindowManagerTests: XCTestCase {
         XCTAssertTrue(panel.field.isEnabled)
         panel.setBusy(false)
         XCTAssertTrue(panel.field.isEnabled)
+    }
+
+    func testHelpCanOpenAndCloseWithoutLosingPassword() throws {
+        let (panel, window) = makeOffscreenKeyPanel()
+        defer { window.close() }
+        XCTAssertTrue(window.makeFirstResponder(panel.field))
+        pump()
+        panel.field.currentEditor()?.insertText("partial-password")
+        let responder = window.firstResponder
+        XCTAssertTrue(panel.helpCard.isHidden)
+
+        panel.helpButton.performClick(nil)
+        XCTAssertFalse(panel.helpCard.isHidden)
+        XCTAssertEqual(panel.helpCard.window?.level, window.level)
+        XCTAssertTrue(window.firstResponder === responder)
+        XCTAssertEqual(panel.field.currentEditor()?.string, "partial-password")
+        panel.helpClose.performClick(nil)
+        XCTAssertTrue(panel.helpCard.isHidden)
+        XCTAssertTrue(window.firstResponder === responder)
+        XCTAssertEqual(panel.field.currentEditor()?.string, "partial-password")
+        panel.helpButton.performClick(nil)
+        let editor = try XCTUnwrap(panel.field.currentEditor() as? NSTextView)
+        XCTAssertTrue(panel.control(panel.field, textView: editor,
+                                    doCommandBy: #selector(NSResponder.cancelOperation(_:))))
+        XCTAssertTrue(panel.helpCard.isHidden)
+        panel.helpButton.performClick(nil)
+        panel.configure(reason: .lockNow)
+        XCTAssertTrue(panel.helpCard.isHidden, "a new lock starts with help dismissed")
+    }
+
+    func testSubmitTracksLatestEditorTextEvenWhenCellIsStale() throws {
+        let (panel, window) = makeOffscreenKeyPanel()
+        defer { window.close() }
+        XCTAssertFalse(panel.submit.isEnabled)
+        XCTAssertTrue(window.makeFirstResponder(panel.field))
+        pump()
+        let editor = try XCTUnwrap(panel.field.currentEditor() as? NSTextView)
+        editor.string = " "
+        panel.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: panel.field))
+        XCTAssertTrue(panel.submit.isEnabled, "spaces are valid password characters")
+        XCTAssertEqual(panel.submit.contentTintColor, .black)
+
+        // Deletion may reach the editor before it reaches the control's cell.
+        window.makeFirstResponder(nil)
+        panel.field.stringValue = "stale-cell"
+        XCTAssertTrue(window.makeFirstResponder(panel.field))
+        let editingAgain = try XCTUnwrap(panel.field.currentEditor() as? NSTextView)
+        editingAgain.string = ""
+        panel.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: panel.field))
+        XCTAssertFalse(panel.submit.isEnabled)
+        XCTAssertTrue(panel.isPlaceholderVisible)
+        var submitted = false
+        panel.onSubmit = { _ in submitted = true }
+        panel.field.sendAction(panel.field.action, to: panel.field.target)
+        XCTAssertFalse(submitted, "Return must not submit an empty editor")
+
+        editingAgain.insertText("pasted-password")
+        XCTAssertTrue(panel.submit.isEnabled)
+        panel.resetInput()
+        XCTAssertFalse(panel.submit.isEnabled)
+        XCTAssertTrue(panel.isPlaceholderVisible)
+    }
+
+    func testSubmitRestoresTypedStateAfterBusyAndKeepsUnavailableDisabled() {
+        let panel = PasswordPanelController()
+        _ = panel.view
+        panel.configure(reason: .passwordOnly)
+        panel.field.stringValue = "wrong-password"
+        panel.showError("Incorrect password")
+        XCTAssertTrue(panel.submit.isEnabled)
+        panel.setBusy(true)
+        XCTAssertTrue(panel.submit.isHidden)
+        XCTAssertFalse(panel.submit.isEnabled)
+        panel.setBusy(false)
+        XCTAssertFalse(panel.submit.isHidden)
+        XCTAssertTrue(panel.submit.isEnabled)
+        XCTAssertEqual(panel.field.stringValue, "wrong-password")
+        XCTAssertEqual(panel.hint.stringValue, "Incorrect password")
+        panel.resetInput()
+        panel.setBusy(true)
+        panel.setBusy(false)
+        XCTAssertFalse(panel.submit.isEnabled)
+        panel.configure(reason: .keychainUnavailable)
+        panel.field.stringValue = "password"
+        panel.setBusy(true)
+        panel.setBusy(false)
+        XCTAssertFalse(panel.field.isEnabled)
+        XCTAssertFalse(panel.submit.isEnabled)
     }
 
     func testSubmitReadsFieldEditorWhenCellIsStale() {

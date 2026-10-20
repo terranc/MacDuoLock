@@ -10,6 +10,8 @@ enum EventTapError: Error {
 
 final class EventTapController: TapCommanding {
     var onBackdoor: (() -> Void)?
+    /// PID of a CGEvent posted by userspace (virtual keyboard / remote injector).
+    var onInjectedEvent: ((pid_t) -> Void)?
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private var localChordMonitor: Any?
@@ -57,6 +59,10 @@ final class EventTapController: TapCommanding {
         DispatchQueue.main.async { [weak self] in self?.onBackdoor?() }
     }
 
+    private func reportInjected(_ pid: pid_t) {
+        DispatchQueue.main.async { [weak self] in self?.onInjectedEvent?(pid) }
+    }
+
     private func noteChord(_ event: NSEvent, via source: String) -> Bool {
         if event.isARepeat { return false }
         let flags = CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
@@ -88,6 +94,9 @@ final class EventTapController: TapCommanding {
             (UInt64(1) << CGEventType.keyDown.rawValue)
             | (UInt64(1) << CGEventType.keyUp.rawValue)
             | (UInt64(1) << CGEventType.flagsChanged.rawValue)
+            | (UInt64(1) << CGEventType.leftMouseDown.rawValue)
+            | (UInt64(1) << CGEventType.rightMouseDown.rawValue)
+            | (UInt64(1) << CGEventType.otherMouseDown.rawValue)
         guard let port = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
@@ -101,6 +110,11 @@ final class EventTapController: TapCommanding {
                         CGEvent.tapEnable(tap: tap, enable: true)
                     }
                     return Unmanaged.passUnretained(event)
+                }
+                let injectorPID = pid_t(event.getIntegerValueField(.eventSourceUnixProcessID))
+                if injectorPID > 0,
+                   type == .keyDown || type == .leftMouseDown || type == .rightMouseDown || type == .otherMouseDown {
+                    controller.reportInjected(injectorPID)
                 }
                 let code = event.getIntegerValueField(.keyboardEventKeycode)
                 let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0

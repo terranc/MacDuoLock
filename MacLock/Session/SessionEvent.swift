@@ -26,7 +26,11 @@ enum SessionEvent: Equatable {
     /// Control-Option-Command-Grave: unlock when shielded, lock when at the desktop.
     case chordToggle
     case screensChanged
+    case willSleep
     case didWake(SessionSnapshot)
     case reconcile(SessionSnapshot)
     case keychainBecameAvailable
+    /// Inbound remote-control session (UU Remote, ToDesk, Screen Sharing, …).
+    case remoteSessionBegan
+    case remoteSessionEnded
 }

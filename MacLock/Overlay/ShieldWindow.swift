@@ -20,7 +20,8 @@ final class ShieldWindow: NSWindow {
         hasShadow = false
         level = .screenSaver
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
-        sharingType = .none
+        // Remote-control capture must show the shield, not the desktop beneath it.
+        sharingType = .readOnly
         hidesOnDeactivate = false
         canHide = false
         animationBehavior = .none

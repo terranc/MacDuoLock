@@ -8,22 +8,54 @@ protocol CaptureDeviceCataloging: AnyObject {
     func stop()
 }
 
+/// One subscriber, restartable: `close()` finishes the current stream so the
+/// next `open()` is a live sequence. A lazy stream that is finished once
+/// never delivers Continuity Camera devices that appear after the first scan.
+final class RestartableSnapshotStream {
+    private var continuation: AsyncStream<[CaptureDeviceSnapshot]>.Continuation?
+    private var boxed: AsyncStream<[CaptureDeviceSnapshot]>?
+
+    var stream: AsyncStream<[CaptureDeviceSnapshot]> {
+        boxed ?? open()
+    }
+
+    @discardableResult
+    func open() -> AsyncStream<[CaptureDeviceSnapshot]> {
+        continuation?.finish()
+        let next = AsyncStream<[CaptureDeviceSnapshot]> { [weak self] continuation in
+            self?.continuation = continuation
+        }
+        boxed = next
+        return next
+    }
+
+    func yield(_ devices: [CaptureDeviceSnapshot]) {
+        continuation?.yield(devices)
+    }
+
+    func close() {
+        continuation?.finish()
+        continuation = nil
+        boxed = nil
+    }
+}
+
 final class AVCaptureDeviceCatalog: CaptureDeviceCataloging {
     private var session: AVCaptureDevice.DiscoverySession?
-    private var continuation: AsyncStream<[CaptureDeviceSnapshot]>.Continuation?
+    private let changes = RestartableSnapshotStream()
     private var observers: [NSObjectProtocol] = []
+    private var devicesObservation: NSKeyValueObservation?
 
     var currentDevices: [CaptureDeviceSnapshot] {
         snapshots(from: session)
     }
 
-    lazy var deviceChanges: AsyncStream<[CaptureDeviceSnapshot]> = {
-        AsyncStream { [weak self] cont in
-            self?.continuation = cont
-        }
-    }()
+    var deviceChanges: AsyncStream<[CaptureDeviceSnapshot]> {
+        changes.stream
+    }
 
     func start() {
+        tearDownObservations()
         let types: [AVCaptureDevice.DeviceType] = {
             var list: [AVCaptureDevice.DeviceType] = [.continuityCamera]
             if #available(macOS 14.0, *) {
@@ -38,6 +70,17 @@ final class AVCaptureDeviceCatalog: CaptureDeviceCataloging {
             mediaType: .video,
             position: .unspecified
         )
+        changes.open()
+        installObservations()
+    }
+
+    func stop() {
+        tearDownObservations()
+        session = nil
+        changes.close()
+    }
+
+    private func installObservations() {
         let center = NotificationCenter.default
         let connected = center.addObserver(
             forName: AVCaptureDevice.wasConnectedNotification,
@@ -54,18 +97,20 @@ final class AVCaptureDeviceCatalog: CaptureDeviceCataloging {
             self?.emit()
         }
         observers = [connected, disconnected]
+        devicesObservation = session?.observe(\.devices, options: [.new]) { [weak self] _, _ in
+            DispatchQueue.main.async { self?.emit() }
+        }
     }
 
-    func stop() {
+    private func tearDownObservations() {
+        devicesObservation?.invalidate()
+        devicesObservation = nil
         observers.forEach { NotificationCenter.default.removeObserver($0) }
         observers.removeAll()
-        session = nil
-        continuation?.finish()
-        continuation = nil
     }
 
     private func emit() {
-        continuation?.yield(currentDevices)
+        changes.yield(currentDevices)
     }
 
     private func snapshots(from session: AVCaptureDevice.DiscoverySession?) -> [CaptureDeviceSnapshot] {

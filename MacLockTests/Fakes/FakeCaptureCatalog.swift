@@ -3,21 +3,24 @@ import Foundation
 
 final class FakeCaptureCatalog: CaptureDeviceCataloging {
     var currentDevices: [CaptureDeviceSnapshot] = []
-    private var listeners: [( [CaptureDeviceSnapshot]) -> Void] = []
+    private let changes = RestartableSnapshotStream()
     var startCount = 0
     var stopCount = 0
 
-    var deviceChanges: AsyncStream<[CaptureDeviceSnapshot]> {
-        AsyncStream { [weak self] cont in
-            self?.listeners.append { cont.yield($0) }
-        }
+    var deviceChanges: AsyncStream<[CaptureDeviceSnapshot]> { changes.stream }
+
+    func start() {
+        startCount += 1
+        changes.open()
     }
 
-    func start() { startCount += 1 }
-    func stop() { stopCount += 1 }
+    func stop() {
+        stopCount += 1
+        changes.close()
+    }
 
     func emit(_ devices: [CaptureDeviceSnapshot]) {
         currentDevices = devices
-        listeners.forEach { $0(devices) }
+        changes.yield(devices)
     }
 }

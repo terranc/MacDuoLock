@@ -163,6 +163,7 @@ final class SettingsModel: ObservableObject {
     private let tap: EventTapController
     /// Lets the caller re-render the status menu so its key equivalent matches.
     var onShortcutChanged: (() -> Void)?
+    var onSkipRemoteShieldChanged: ((Bool) -> Void)?
 
     @Published var newPassword = ""
     @Published var confirmPassword = ""
@@ -172,6 +173,7 @@ final class SettingsModel: ObservableObject {
     @Published var loginStatus: SMAppService.Status = .notRegistered
     @Published var loginMessage = ""
     @Published var loginFailed = false
+    @Published var skipRemoteShield = RemoteShieldPolicy.isEnabled
     @Published private(set) var isUpdating = false
 
     init(flow: OnboardingFlow, loginItems: LoginItemService, tap: EventTapController) {
@@ -193,7 +195,14 @@ final class SettingsModel: ObservableObject {
 
     func refresh() {
         shortcut = LockShortcutStore.current
+        skipRemoteShield = RemoteShieldPolicy.isEnabled
         applyLoginStatus()
+    }
+
+    func setSkipRemoteShield(_ enabled: Bool) {
+        RemoteShieldPolicy.isEnabled = enabled
+        skipRemoteShield = enabled
+        onSkipRemoteShieldChanged?(enabled)
     }
 
     func updatePassword() async {
@@ -395,6 +404,12 @@ struct SettingsRootView: View {
             )) {
                 Text(NSLocalizedString("maclock.settings.loginitem", comment: ""))
             }
+            Toggle(isOn: Binding(
+                get: { model.skipRemoteShield },
+                set: { model.setSkipRemoteShield($0) }
+            )) {
+                Text(NSLocalizedString("maclock.settings.remote.skip", comment: ""))
+            }
         } header: {
             Text(NSLocalizedString("maclock.settings.section.general", comment: ""))
         } footer: {
@@ -411,6 +426,9 @@ struct SettingsRootView: View {
                     .buttonStyle(.link)
                     .font(.callout)
                 }
+                Text(NSLocalizedString("maclock.settings.remote.hint", comment: ""))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                 Text(model.versionText)
                     .font(.footnote)
                     .foregroundStyle(.tertiary)
@@ -427,6 +445,11 @@ final class SettingsContentViewController: NSHostingController<SettingsRootView>
     var onShortcutChanged: (() -> Void)? {
         get { model.onShortcutChanged }
         set { model.onShortcutChanged = newValue }
+    }
+
+    var onSkipRemoteShieldChanged: ((Bool) -> Void)? {
+        get { model.onSkipRemoteShieldChanged }
+        set { model.onSkipRemoteShieldChanged = newValue }
     }
 
     init(flow: OnboardingFlow, loginItems: LoginItemService, tap: EventTapController) {

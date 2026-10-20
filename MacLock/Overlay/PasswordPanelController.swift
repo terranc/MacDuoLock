@@ -58,6 +58,27 @@ private final class CapsuleView: NSView {
     }
 }
 
+/// Help stays in the shield's own window and never layer-backs the secure field.
+final class HelpCardView: NSView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = false
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    override var wantsUpdateLayer: Bool { false }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 12, yRadius: 12)
+        NSColor(white: 0.10, alpha: 1).setFill()
+        path.fill()
+        ShieldStyle.fieldBorder.setStroke()
+        path.lineWidth = 1
+        path.stroke()
+    }
+}
+
 /// Secure field. Do not replace its cell class — that breaks first responder.
 final class ShieldSecureField: NSSecureTextField {
     var onFocusChange: ((Bool) -> Void)?
@@ -129,18 +150,20 @@ private final class RoundIconButton: NSButton {
 
     override func draw(_ dirtyRect: NSRect) {
         let oval = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.5, dy: 0.5))
-        ShieldStyle.buttonFill.setFill()
+        (isEnabled ? NSColor.white : ShieldStyle.buttonFill).setFill()
         oval.fill()
-        if let image {
-            let size = NSSize(width: 13, height: 13)
-            let rect = NSRect(
-                x: ((bounds.width - size.width) / 2).rounded(),
-                y: ((bounds.height - size.height) / 2).rounded(),
-                width: size.width,
-                height: size.height
-            )
-            image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-        }
+        let arrow = NSBezierPath()
+        let centre = NSPoint(x: bounds.midX, y: bounds.midY)
+        arrow.move(to: NSPoint(x: centre.x - 5, y: centre.y))
+        arrow.line(to: NSPoint(x: centre.x + 5, y: centre.y))
+        arrow.move(to: NSPoint(x: centre.x + 1, y: centre.y + 4))
+        arrow.line(to: NSPoint(x: centre.x + 5, y: centre.y))
+        arrow.line(to: NSPoint(x: centre.x + 1, y: centre.y - 4))
+        arrow.lineWidth = 1.6
+        arrow.lineCapStyle = .round
+        arrow.lineJoinStyle = .round
+        (contentTintColor ?? ShieldStyle.primaryText).setStroke()
+        arrow.stroke()
     }
 }
 
@@ -170,6 +193,9 @@ final class PasswordPanelController: NSViewController {
     private let spinner = NSProgressIndicator()
     let submit: NSButton = RoundIconButton(title: "", target: nil, action: nil)
     let hint = NSTextField(labelWithString: "")
+    let helpButton = NSButton(title: "", target: nil, action: nil)
+    let helpCard = HelpCardView(frame: .zero)
+    let helpClose = NSButton(title: "", target: nil, action: nil)
     let forgot = NSButton(title: NSLocalizedString("maclock.forgot", comment: ""), target: nil, action: nil)
 
     var onSubmit: ((String) -> Void)?
@@ -185,7 +211,8 @@ final class PasswordPanelController: NSViewController {
         configureField()
         configureSubmit()
         configureLabels()
-        [lockIcon, hint, capsule, forgot].forEach { root.addSubview($0) }
+        configureHelp()
+        [lockIcon, hint, capsule, forgot, helpButton, helpCard].forEach { root.addSubview($0) }
         [ghost, field, submit].forEach { capsule.addSubview($0) }
         activateConstraints(in: root)
         view = root
@@ -271,6 +298,52 @@ final class PasswordPanelController: NSViewController {
         forgot.isHidden = true
     }
 
+    private func configureHelp() {
+        helpButton.isBordered = false
+        helpButton.image = ShieldStyle.symbol("questionmark.circle", pointSize: 21, weight: .regular)
+        helpButton.contentTintColor = ShieldStyle.tertiaryText
+        helpButton.setAccessibilityLabel(NSLocalizedString("maclock.help.title", comment: ""))
+        helpButton.toolTip = NSLocalizedString("maclock.help.title", comment: "")
+        helpButton.translatesAutoresizingMaskIntoConstraints = false
+        helpButton.target = self
+        helpButton.action = #selector(toggleHelp)
+
+        helpCard.translatesAutoresizingMaskIntoConstraints = false
+        helpCard.isHidden = true
+        let text = NSTextField(wrappingLabelWithString: NSLocalizedString("maclock.help.iphone", comment: ""))
+        text.font = .systemFont(ofSize: 13)
+        text.textColor = ShieldStyle.secondaryText
+        text.isSelectable = false
+        text.translatesAutoresizingMaskIntoConstraints = false
+
+        helpClose.isBordered = false
+        helpClose.image = ShieldStyle.symbol("xmark", pointSize: 11, weight: .medium)
+        helpClose.contentTintColor = ShieldStyle.secondaryText
+        helpClose.setAccessibilityLabel(NSLocalizedString("maclock.help.close", comment: ""))
+        helpClose.translatesAutoresizingMaskIntoConstraints = false
+        helpClose.keyEquivalent = "\u{1b}"
+        helpClose.keyEquivalentModifierMask = []
+        helpClose.target = self
+        helpClose.action = #selector(toggleHelp)
+        let content = helpCard
+        content.addSubview(text)
+        content.addSubview(helpClose)
+        NSLayoutConstraint.activate([
+            text.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+            text.trailingAnchor.constraint(equalTo: helpClose.leadingAnchor, constant: -8),
+            text.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
+            text.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -16),
+            helpClose.topAnchor.constraint(equalTo: content.topAnchor, constant: 8),
+            helpClose.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -8),
+            helpClose.widthAnchor.constraint(equalToConstant: 24),
+            helpClose.heightAnchor.constraint(equalToConstant: 24),
+        ])
+    }
+
+    @objc private func toggleHelp() {
+        helpCard.isHidden.toggle()
+    }
+
     private func activateConstraints(in root: NSView) {
         NSLayoutConstraint.activate([
             capsule.centerXAnchor.constraint(equalTo: root.centerXAnchor),
@@ -298,12 +371,21 @@ final class PasswordPanelController: NSViewController {
             lockIcon.bottomAnchor.constraint(equalTo: hint.topAnchor, constant: -26),
             lockIcon.centerXAnchor.constraint(equalTo: root.centerXAnchor),
 
-            forgot.topAnchor.constraint(equalTo: capsule.bottomAnchor, constant: 24),
+            helpButton.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -28),
+            helpButton.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -24),
+            helpButton.widthAnchor.constraint(equalToConstant: 28),
+            helpButton.heightAnchor.constraint(equalToConstant: 28),
+            helpCard.trailingAnchor.constraint(equalTo: helpButton.trailingAnchor),
+            helpCard.bottomAnchor.constraint(equalTo: helpButton.topAnchor, constant: -12),
+            helpCard.widthAnchor.constraint(equalToConstant: 340),
+
+            forgot.topAnchor.constraint(equalTo: capsule.bottomAnchor, constant: 18),
             forgot.centerXAnchor.constraint(equalTo: root.centerXAnchor),
         ])
     }
 
     func configure(reason: OverlayReason) {
+        helpCard.isHidden = true
         switch reason {
         case .keychainUnavailable:
             field.isEnabled = false
@@ -312,13 +394,11 @@ final class PasswordPanelController: NSViewController {
             showInfo(NSLocalizedString("maclock.keychain.waiting", comment: ""))
         case .recoveryRotate:
             field.isEnabled = true
-            submit.isEnabled = true
             forgot.isHidden = true
             showInfo(NSLocalizedString("maclock.recovery.rotate", comment: ""))
         default:
             recoveryMode = false
             field.isEnabled = true
-            submit.isEnabled = true
             setIcon(named: "lock.fill")
             setPlaceholder("maclock.password.placeholder")
             showInfo(NSLocalizedString("maclock.unlock.prompt", comment: ""))
@@ -338,9 +418,8 @@ final class PasswordPanelController: NSViewController {
 
     func enterRecoveryMode() {
         recoveryMode = true
-        field.stringValue = ""
+        resetInput()
         field.isEnabled = true
-        submit.isEnabled = true
         setIcon(named: "key.fill")
         setPlaceholder("maclock.recovery.placeholder")
         showInfo(NSLocalizedString("maclock.recovery.prompt", comment: ""))
@@ -381,13 +460,15 @@ final class PasswordPanelController: NSViewController {
     var isPlaceholderVisible: Bool { !ghost.isHidden }
 
     func refreshGhost() {
-        let editor = field.currentEditor()?.string ?? ""
-        ghost.isHidden = !editor.isEmpty || !field.stringValue.isEmpty
+        let text = field.currentEditor()?.string ?? field.stringValue
+        ghost.isHidden = !text.isEmpty
+        submit.isEnabled = field.isEnabled && !isBusy && !text.isEmpty
+        submit.contentTintColor = submit.isEnabled ? .black : ShieldStyle.primaryText
+        submit.needsDisplay = true
     }
 
     func setBusy(_ busy: Bool) {
         isBusy = busy
-        submit.isEnabled = !busy
         submit.isHidden = busy
         if busy {
             attachSpinner()
@@ -397,8 +478,8 @@ final class PasswordPanelController: NSViewController {
             spinner.removeFromSuperview()
             restoreFieldFocus()
             field.polishEditor()
-            refreshGhost()
         }
+        refreshGhost()
     }
 
     private func attachSpinner() {
@@ -428,13 +509,15 @@ final class PasswordPanelController: NSViewController {
     }
 
     @objc private func submitClicked() {
-        guard !isBusy else { return }
+        guard !isBusy, field.isEnabled else { return }
         if let editor = field.currentEditor() {
             (editor as? NSTextView)?.unmarkText()
             field.stringValue = editor.string
         } else {
             field.validateEditing()
         }
+        refreshGhost()
+        guard !field.stringValue.isEmpty else { return }
         onSubmit?(field.stringValue)
     }
 
@@ -456,6 +539,10 @@ extension PasswordPanelController: NSTextFieldDelegate {
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if commandSelector == #selector(cancelOperation(_:)), !helpCard.isHidden {
+            helpCard.isHidden = true
+            return true
+        }
         if commandSelector == #selector(insertNewline(_:)) {
             submitClicked()
             return true

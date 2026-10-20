@@ -23,7 +23,7 @@ final class AuxiliaryShieldView: NSView {
         icon.imageScaling = .scaleNone
         icon.translatesAutoresizingMaskIntoConstraints = false
 
-        let wordmark = NSTextField(labelWithString: "MacLock")
+        let wordmark = NSTextField(labelWithString: "MacDuoLock")
         wordmark.font = .systemFont(ofSize: 11, weight: .medium)
         wordmark.textColor = ShieldStyle.ghostText
         wordmark.alignment = .center

@@ -72,7 +72,7 @@ final class OverlayWindowManager: OverlayCommanding {
                     window.orderFrontRegardless()
                 }
                 window.setFrame(descriptor.frame, display: true)
-                window.sharingType = .none
+                window.sharingType = .readOnly
                 window.makeKey()
             }
             windows.append(window)

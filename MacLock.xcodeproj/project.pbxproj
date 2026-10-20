@@ -94,6 +94,12 @@
 		8BBFCD45C9A0F8F28932FD62 /* RateLimiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B077C53A32CD665D06226B /* RateLimiterTests.swift */; };
 		85642C7C2A90F56C2765E43B /* SessionGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionGateTests.swift; sourceTree = "<group>"; };
 		1240356A92F0C1D5B2B3F509 /* SessionGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85642C7C2A90F56C2765E43B /* SessionGateTests.swift */; };
+		3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlCatalog.swift; sourceTree = "<group>"; };
+		4B9D2F6E0A3C5D7B9E1F2A3B /* RemoteControlCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */; };
+		5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteSessionDetector.swift; sourceTree = "<group>"; };
+		6D1F4B8A2C5E7F9D1A3B4C5D /* RemoteSessionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */; };
+		7E2A5C9B3D6F8A0E2B4C5D6E /* RemoteControlCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlCatalogTests.swift; sourceTree = "<group>"; };
+		8F3B6D0C4E7A9B1F3C5D6E7F /* RemoteControlCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2A5C9B3D6F8A0E2B4C5D6E /* RemoteControlCatalogTests.swift */; };
 		12F1C9823B7D241C34392D7F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D112346025269318A39D73A /* MacLock.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacLock.entitlements; sourceTree = "<group>"; };
 		31622F5DB5AF44890238D799 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -112,7 +118,7 @@
 		1178028A773C8FD1FE4358FD /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = C2FD79F5C277ECA0F1415A4D /* Localizable.strings */; };
 		C50888324439B60AEA99431A /* app.maclock.agent.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = app.maclock.agent.plist; sourceTree = "<group>"; };
 		2C1E3B6EB289E2C73F9698D0 /* app.maclock.agent.plist in Resources */ = {isa = PBXBuildFile; fileRef = C50888324439B60AEA99431A /* app.maclock.agent.plist */; };
-		84337AD8D27FCD69AF2C4FC2 /* MacLock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacLock.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		84337AD8D27FCD69AF2C4FC2 /* MacDuoLock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacDuoLock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DFDED23FA58339F9273F6C84 /* MacLockTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacLockTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D1D0524B025E57AFFF263442 /* App */ = {
 			isa = PBXGroup;
@@ -185,6 +191,8 @@
 			isa = PBXGroup;
 			children = (
 				684B480B97FCC265A27DE594 /* GateEffects.swift */,
+				3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */,
+				5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */,
 				DDF02EC45FC2BD4B8BDC1F7D /* ScreenLockMonitor.swift */,
 				F4AA91B835641B450AD76565 /* SessionEvent.swift */,
 				AE9BFD7900686EB263545ACD /* SessionGate.swift */,
@@ -249,6 +257,7 @@
 				51AFA6C1ECB3100D6C834ABB /* PresenceClassifierTests.swift */,
 				8CA0D8A6A06F9D63385FBF72 /* PresenceMonitorTests.swift */,
 				71B077C53A32CD665D06226B /* RateLimiterTests.swift */,
+				7E2A5C9B3D6F8A0E2B4C5D6E /* RemoteControlCatalogTests.swift */,
 				85642C7C2A90F56C2765E43B /* SessionGateTests.swift */,
 				D7EB1F216C1904DDE34425AB /* Fakes */,
 			);
@@ -276,7 +285,7 @@
 		547D009064F7C3F13BEF3460 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				84337AD8D27FCD69AF2C4FC2 /* MacLock.app */,
+				84337AD8D27FCD69AF2C4FC2 /* MacDuoLock.app */,
 				DFDED23FA58339F9273F6C84 /* MacLockTests.xctest */,
 			);
 			name = Products;
@@ -320,6 +329,8 @@
 				919CDD8DFC75BE69B84AC62C /* PresenceMonitor.swift in Sources */,
 				6EAAE5AFFD2C6DBDF7AAAC97 /* GateEffects.swift in Sources */,
 				FE4B17EDDA7CC9CAA908CBEF /* ScreenLockMonitor.swift in Sources */,
+				4B9D2F6E0A3C5D7B9E1F2A3B /* RemoteControlCatalog.swift in Sources */,
+				6D1F4B8A2C5E7F9D1A3B4C5D /* RemoteSessionDetector.swift in Sources */,
 				7AB6C9B8BA488B805020487F /* SessionEvent.swift in Sources */,
 				D10062331D9294CCD95D47E9 /* SessionGate.swift in Sources */,
 				F74D33EE97E755C150DD23A8 /* ArmDisarmController.swift in Sources */,
@@ -373,6 +384,7 @@
 				D65BA25DB1F4EDCD3E4D28F8 /* PresenceClassifierTests.swift in Sources */,
 				50B350A3A1B65FCFFFE19471 /* PresenceMonitorTests.swift in Sources */,
 				8BBFCD45C9A0F8F28932FD62 /* RateLimiterTests.swift in Sources */,
+				8F3B6D0C4E7A9B1F3C5D6E7F /* RemoteControlCatalogTests.swift in Sources */,
 				1240356A92F0C1D5B2B3F509 /* SessionGateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -398,8 +410,8 @@
 			dependencies = (
 			);
 			name = MacLock;
-			productName = MacLock;
-			productReference = 84337AD8D27FCD69AF2C4FC2 /* MacLock.app */;
+			productName = MacDuoLock;
+			productReference = 84337AD8D27FCD69AF2C4FC2 /* MacDuoLock.app */;
 			productType = "com.apple.product-type.application";
 		};
 		5DED2D04DB49D4091162647E /* MacLockTests */ = {
@@ -503,19 +515,21 @@
 		C9A154C4B544979AF5B4B5A5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = MacLock/App/MacLock.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MacLock/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.5.0;
+				MARKETING_VERSION = 0.6.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.maclock;
-				PRODUCT_NAME = MacLock;
+				PRODUCT_MODULE_NAME = MacLock;
+				PRODUCT_NAME = MacDuoLock;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = Debug;
@@ -523,18 +537,20 @@
 		987BA7629EBED3E474C358C9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = MacLock/App/MacLock.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MacLock/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.5.0;
+				MARKETING_VERSION = 0.6.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.maclock;
-				PRODUCT_NAME = MacLock;
+				PRODUCT_MODULE_NAME = MacLock;
+				PRODUCT_NAME = MacDuoLock;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = Release;
@@ -550,7 +566,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.maclock.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacLock.app/Contents/MacOS/MacLock";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacDuoLock.app/Contents/MacOS/MacDuoLock";
 			};
 			name = Debug;
 		};
@@ -565,7 +581,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.maclock.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacLock.app/Contents/MacOS/MacLock";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacDuoLock.app/Contents/MacOS/MacDuoLock";
 			};
 			name = Release;
 		};

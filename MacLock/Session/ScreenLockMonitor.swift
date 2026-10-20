@@ -6,7 +6,10 @@ final class ScreenLockMonitor: NSObject {
     let overlay: any OverlayCommanding
     let gate: SessionGate
     var snapshotProvider: () -> SessionSnapshot
+    /// Keep remote-session evidence warm before unlock / wake / reconcile.
+    var refreshRemote: (() -> Void)?
     private var wakeObserver: NSObjectProtocol?
+    private var sleepObserver: NSObjectProtocol?
     private var screenObserver: NSObjectProtocol?
     private var reconcileTimer: Timer?
 
@@ -38,8 +41,20 @@ final class ScreenLockMonitor: NSObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            self.gate.handle(.didWake(self.snapshotProvider()))
+            Task { @MainActor in
+                guard let self else { return }
+                self.refreshRemote?()
+                self.gate.handle(.didWake(self.snapshotProvider()))
+            }
+        }
+        sleepObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.gate.handle(.willSleep)
+            }
         }
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -51,6 +66,7 @@ final class ScreenLockMonitor: NSObject {
         reconcileTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
+                self.refreshRemote?()
                 self.gate.handle(.reconcile(self.snapshotProvider()))
             }
         }
@@ -63,6 +79,7 @@ final class ScreenLockMonitor: NSObject {
 
     @objc private func didReceiveUnlock(_ notification: Notification) {
         MacLockLog.file("dnc screenIsUnlocked")
+        refreshRemote?()
         gate.handle(.screenUnlocked)
     }
 
@@ -75,6 +92,9 @@ final class ScreenLockMonitor: NSObject {
         DistributedNotificationCenter.default().removeObserver(self)
         if let wakeObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
+        }
+        if let sleepObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(sleepObserver)
         }
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)
