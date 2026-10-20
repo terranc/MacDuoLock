@@ -9,7 +9,7 @@
 [![Tests](https://github.com/terranc/MacDuoLock/actions/workflows/test.yml/badge.svg)](https://github.com/terranc/MacDuoLock/actions/workflows/test.yml)
 [![Download](https://img.shields.io/github/v/release/terranc/MacDuoLock?label=下载)](https://github.com/terranc/MacDuoLock/releases/latest)
 
-MacDuoLock（原名 MacLock）在 macOS 原生解锁后，为桌面加上一层独立密码遮罩。你可以直接输入应用密码，也可以等待附近符合条件的 iPhone 被识别后自动解锁，无需在两种方式之间切换。
+MacDuoLock 在 macOS 原生解锁后，为桌面加上一层独立密码遮罩。你可以直接输入应用密码，也可以等待附近符合条件的 iPhone 被识别后自动解锁，无需在两种方式之间切换。
 
 它不保存、读取或代输 macOS 登录密码，也不能替你解开 macOS 原生锁屏。
 
