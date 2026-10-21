@@ -14,7 +14,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem = StatusItemController()
     var loginItems = LoginItemService()
     var tap = EventTapController()
-    var remote = LiveRemoteSessionDetector()
     var quitIntent: QuitIntent = .none
     var positivelyDisarmedOrUnregistered = false
     private var sigterm: DispatchSourceSignal?
@@ -55,21 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Show the password shield while Continuity Camera discovery catches up after unlock/wake.
         gate.waitTOnUnlock = true
         gate.presenceTimeout = 5
-        gate.skipShieldForRemoteSession = RemoteShieldPolicy.isEnabled
         gate.cameraAuthorized = Permissions.cameraAuthorized()
-        gate.isRemoteSessionActive = { [weak self] in self?.remote.isActive ?? false }
-        remote.onChange = { [weak self] active in
-            self?.gate.handle(active ? .remoteSessionBegan : .remoteSessionEnded)
-            self?.statusItem.refresh()
-        }
-        tap.onInjectedEvent = { [weak self] pid in self?.remote.noteInjected(pid: pid) }
-        remote.start()
-        if Permissions.cameraStatus() == .notDetermined {
-            Task { [weak self] in
-                _ = await Permissions.requestCamera()
-                self?.gate.cameraAuthorized = Permissions.cameraAuthorized()
-            }
-        }
         presence.onMatched = { [weak self] evidence in
             self?.gate.handle(.presenceMatched(evidence))
         }
@@ -79,11 +64,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.onLockNow = { [weak self] in self?.lockNow() }
         statusItem.onDetectPhone = { [weak self] in Task { await self?.detectPhone() } }
         statusItem.onSettings = { [weak self] in self?.openSettings() }
+        statusItem.onSetup = { [weak self] in self?.openPermissions() }
         statusItem.onQuit = { [weak self] in self?.requestQuit() }
         statusItem.install(gate: gate)
 
         let snapshot = sessionSnapshot()
-        remote.refresh()
         let passwordQ = secrets.passwordQuery()
         _ = secrets.cleanDisarmQuery()
         if passwordQ.isNo {
@@ -102,7 +87,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         lockMonitor = ScreenLockMonitor(overlay: overlay, gate: gate, snapshotProvider: sessionSnapshot)
-        lockMonitor.refreshRemote = { [weak self] in self?.remote.refresh() }
         lockMonitor.install()
         overlay.passwordPanel.onSubmit = { [weak self] text in
             Task { await self?.submitSecret(text) }
@@ -166,19 +150,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showOnboarding() {
+        guard !overlay.isPresented else { return }
+        if gate.hasPassword {
+            openSettings(page: .permissions)
+            return
+        }
         restoreShellIfNeeded()
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        let window = OnboardingWindowController(flow: onboarding)
-        window.onFinished = { [weak self] in
-            guard let self else { return }
-            self.positivelyDisarmedOrUnregistered = false
-            NSApp.setActivationPolicy(.accessory)
-            self.statusItem.refresh()
-            Task { await self.detectPhone(silentIfNone: true) }
+        if let onboardingWindow {
+            onboardingWindow.showWindow(nil)
+            onboardingWindow.window?.makeKeyAndOrderFront(nil)
+            return
         }
-        window.showWindow(nil)
+        let window = OnboardingWindowController(flow: onboarding, loginItems: loginItems)
+        window.model.onPermissionsChanged = { [weak self] in
+            self?.tap.installPersistentChordWatch()
+        }
+        window.onClose = { [weak self] in
+            guard let self else { return }
+            self.onboardingWindow = nil
+            self.positivelyDisarmedOrUnregistered = !self.gate.armed
+            if self.gate.armed { NSApp.setActivationPolicy(.accessory) }
+            self.statusItem.refresh()
+        }
         onboardingWindow = window
+        window.showWindow(nil)
+        window.window?.makeKeyAndOrderFront(nil)
+    }
+
+    private func openPermissions(_ permission: AppPermission? = nil) {
+        openSettings(page: .permissions)
+        let model = onboardingWindow?.model ?? settingsWindow?.content.permissions
+        if model?.step == .welcome { model?.advance() }
+        if let permission { model?.selectedPermission = permission }
     }
 
     private func lockNow() {
@@ -193,7 +198,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var detectInFlight = false
 
-    private func detectPhone(silentIfNone: Bool = false) async {
+    private func detectPhone() async {
         if detectInFlight { return }
         detectInFlight = true
         statusItem.isDetecting = true
@@ -201,7 +206,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             detectInFlight = false
             statusItem.isDetecting = false
         }
-        let report = await PresenceDiagnostics.report(requestIfNeeded: true)
+        guard Permissions.cameraAuthorized() else {
+            openPermissions(.camera)
+            return
+        }
+        let report = await PresenceDiagnostics.report(requestIfNeeded: false)
         MacLockLog.presence.info("\(report, privacy: .public)")
         gate.cameraAuthorized = Permissions.cameraAuthorized()
         if let device = await PresenceDiagnostics.firstBindableDevice() {
@@ -217,7 +226,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSLocalizedString("maclock.detect.found", comment: ""),
                 symbol: "checkmark.circle.fill"
             )
-        } else if !silentIfNone {
+        } else {
             alert(
                 NSLocalizedString("maclock.detect.title", comment: ""),
                 NSLocalizedString("maclock.detect.failed", comment: ""),
@@ -229,16 +238,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Opens the single settings surface. No alerts anywhere in here — the
     /// login-item outcome is reported inline by the settings view itself.
-    func openSettings() {
+    func openSettings(page: SettingsPage? = nil) {
+        guard !overlay.isPresented else { return }
+        if let onboardingWindow {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            onboardingWindow.showWindow(nil)
+            onboardingWindow.window?.makeKeyAndOrderFront(nil)
+            return
+        }
+        guard gate.hasPassword else {
+            showOnboarding()
+            return
+        }
         restoreShellIfNeeded()
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         if settingsWindow == nil {
             let content = SettingsContentViewController(flow: onboarding, loginItems: loginItems, tap: tap)
             content.onShortcutChanged = { [weak self] in self?.statusItem.refresh() }
-            content.onSkipRemoteShieldChanged = { [weak self] enabled in
-                self?.gate.skipShieldForRemoteSession = enabled
-            }
+            content.onPermissionsChanged = { [weak self] in self?.tap.installPersistentChordWatch() }
             let controller = SettingsWindowController(content: content)
             controller.onClose = { [weak self] in
                 guard let self else { return }
@@ -249,6 +268,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             settingsWindow = controller
         }
+        if let page { settingsWindow?.selectPage(page) }
         // Re-centre on the screen the user is on now, but never yank a window
         // they already have open and may have moved deliberately.
         if settingsWindow?.window?.isVisible != true {

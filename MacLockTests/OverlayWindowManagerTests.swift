@@ -482,24 +482,22 @@ final class OverlayWindowManagerTests: XCTestCase {
             loginItems: LoginItemService(),
             tap: EventTapController()
         )
-        // SwiftUI-hosted: assert a plausible box rather than an exact size, so
-        // the test does not break every time the form gains a row.
+        // Setup and ongoing settings use the same window layout.
         let settingsSize = settings.view.fittingSize
-        XCTAssertGreaterThan(settingsSize.width, 380)
-        XCTAssertGreaterThan(settingsSize.height, 300)
+        XCTAssertEqual(settingsSize.width, AppWindowMetrics.width, accuracy: 1)
+        XCTAssertEqual(settingsSize.height, AppWindowMetrics.height, accuracy: 1)
 
-        let onboarding = OnboardingWindowController(flow: flow)
+        let onboarding = OnboardingWindowController(flow: flow, loginItems: LoginItemService())
         guard let content = onboarding.window?.contentView else {
             return XCTFail("onboarding window has no content view")
         }
-        XCTAssertEqual(content.fittingSize.width, 468, accuracy: 1)
-        XCTAssertGreaterThan(content.fittingSize.height, 250)
-        // The window must hug its content: no dead band under the form.
+        XCTAssertEqual(content.fittingSize.width, 800, accuracy: 1)
+        XCTAssertEqual(content.fittingSize.height, 600, accuracy: 1)
+        // Setup keeps its footer visible while longer instructions can scroll.
         XCTAssertEqual(content.frame.height, content.fittingSize.height, accuracy: 1)
     }
 
-    /// A grouped SwiftUI Form is a scroll view underneath, so an imposed height
-    /// leaves a visible scroller. Assert the content actually fits.
+    /// The general settings page should fit without hiding its footer.
     func testSettingsWindowFitsWithoutScrolling() {
         let secrets = GateSecretsStore(keychain: FakeKeychain())
         let passwords = PasswordStore(secrets: secrets, clock: FakeClock())
@@ -596,6 +594,47 @@ final class OverlayWindowManagerTests: XCTestCase {
     /// Regression: `NSWindow(contentViewController:)` adopts the SwiftUI size
     /// only on the next layout pass. Centring before that placed a near-zero
     /// frame at the screen centre, and the window grew up and right from there.
+    func testSettingsPagesReuseOneWindowAndPreservePendingEdits() throws {
+        let content = SettingsContentViewController(
+            flow: makeOnboardingFlow(), loginItems: LoginItemService(), tap: EventTapController()
+        )
+        let controller = SettingsWindowController(content: content)
+        let window = try XCTUnwrap(controller.window)
+        defer { controller.close() }
+        content.model.newPassword = "unfinished-password"
+        content.model.confirmPassword = "unfinished-confirmation"
+
+        for page in SettingsPage.allCases + [.permissions, .general, .password] {
+            controller.selectPage(page)
+            content.view.layoutSubtreeIfNeeded()
+            XCTAssertTrue(controller.window === window, "changing pages must reuse the settings window")
+            XCTAssertTrue(controller.content === content)
+            XCTAssertEqual(content.model.page, page)
+            XCTAssertEqual(content.model.newPassword, "unfinished-password")
+            XCTAssertEqual(content.model.confirmPassword, "unfinished-confirmation")
+            XCTAssertEqual(content.view.fittingSize.width, AppWindowMetrics.width, accuracy: 1)
+            XCTAssertEqual(content.view.fittingSize.height, AppWindowMetrics.height, accuracy: 1)
+        }
+        XCTAssertFalse(window.isReleasedWhenClosed)
+    }
+
+    func testSettingsCanBeClosedAndRecreatedAcrossAllPages() throws {
+        let flow = makeOnboardingFlow()
+        var closed = 0
+        for page in SettingsPage.allCases {
+            let content = SettingsContentViewController(
+                flow: flow, loginItems: LoginItemService(), tap: EventTapController()
+            )
+            let controller = SettingsWindowController(content: content)
+            controller.onClose = { closed += 1 }
+            controller.selectPage(page)
+            XCTAssertNotNil(controller.window)
+            controller.close()
+            XCTAssertEqual(content.model.page, page)
+        }
+        XCTAssertEqual(closed, SettingsPage.allCases.count)
+    }
+
     func testSettingsWindowIsCentredOnItsScreenAtInit() throws {
         let screen = try XCTUnwrap(NSScreen.active, "no display available")
         let content = SettingsContentViewController(
@@ -632,9 +671,11 @@ final class OverlayWindowManagerTests: XCTestCase {
             loginItems: LoginItemService(),
             tap: EventTapController()
         )
+        settings.model.page = .password
         let window = NSWindow(contentViewController: settings)
         window.isReleasedWhenClosed = false
-        window.setFrame(NSRect(x: -2800, y: -2800, width: 520, height: 420), display: true)
+        window.setFrame(NSRect(x: -2800, y: -2800,
+                               width: AppWindowMetrics.width, height: AppWindowMetrics.height + 28), display: true)
         window.makeKeyAndOrderFront(nil)
         settings.view.layoutSubtreeIfNeeded()
         pump()
@@ -654,7 +695,16 @@ final class OverlayWindowManagerTests: XCTestCase {
         let model = settings.model
         XCTAssertEqual(model.newPassword, "commit-me-now", "new-password binding lagged the field editor")
         XCTAssertEqual(model.confirmPassword, "commit-me-now", "confirm binding lagged the field editor")
-        await model.updatePassword()
+        // Return and the default action can both arrive before saving starts.
+        XCTAssertTrue(fields[1].sendAction(fields[1].action, to: fields[1].target))
+        XCTAssertTrue(fields[1].sendAction(fields[1].action, to: fields[1].target))
+        for _ in 0..<100 {
+            await Task.yield()
+            if model.newPassword.isEmpty { break }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertTrue(model.newPassword.isEmpty, "the field's submit action must save the password")
+        XCTAssertTrue(window.isVisible, "submitting a password must not close settings")
         XCTAssertFalse(model.passwordFailed, model.passwordMessage)
         let verified = await passwords.verify("commit-me-now")
         XCTAssertEqual(verified, .accepted)

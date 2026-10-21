@@ -21,10 +21,6 @@ final class SessionGate {
     var presenceEnabled: Bool = false
     var cameraAuthorized: Bool = false
     var presenceTimeout: TimeInterval = 3
-    /// When a live remote-control session is detected, skip the desktop shield.
-    var skipShieldForRemoteSession: Bool = true
-    var isRemoteSessionActive: () -> Bool = { false }
-    private(set) var unlockedViaRemote = false
     private var checkingWakePresence = false
     private var wakePresenceMatchedAt: TimeInterval?
 
@@ -46,7 +42,6 @@ final class SessionGate {
 
     var presenceOK: Bool { armed && presenceEnabled && cameraAuthorized }
     var waitT: Bool { waitTOnUnlock && presenceOK }
-    private var remoteBypassOK: Bool { skipShieldForRemoteSession && isRemoteSessionActive() }
 
     var keychainUp: Bool {
         !secrets.passwordQuery().isUnavailable && !secrets.cleanDisarmQuery().isUnavailable
@@ -115,8 +110,6 @@ final class SessionGate {
         }
         if snap.screenLocked || !snap.onConsole {
             apply(state: .monitoring, overlay: .dismissSync, tap: .stop, presence: .stop, bump: true, ui: .none)
-        } else if bypassForRemoteSession() {
-            return
         } else {
             let p: PresenceCommand = autoDismissOnPresenceWhileShielded && presenceOK ? .start(generation: 0) : .stop
             apply(
@@ -232,7 +225,6 @@ final class SessionGate {
             secrets.writeCleanDisarm()
             apply(state: .disarmed, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         case (.checkingPresence, .presenceMatched):
-            unlockedViaRemote = false
             apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         case (.checkingPresence, .presenceTimeout):
             let p: PresenceCommand = autoDismissOnPresenceWhileShielded && presenceOK ? .stay : .stop
@@ -247,7 +239,6 @@ final class SessionGate {
         case (.checkingPresence, .recoveryVerified):
             apply(state: .shielded, overlay: .present(.recoveryRotate), tap: .stay, presence: .stop, bump: true, ui: .rotatePassword)
         case (.unlocked, .screenLocked):
-            unlockedViaRemote = false
             apply(state: .monitoring, overlay: .dismissSync, tap: .stop, presence: .stop, bump: true, ui: .none)
         case (.unlocked, .disarmVerified):
             secrets.writeCleanDisarm()
@@ -258,19 +249,7 @@ final class SessionGate {
             // Already at the desktop. Duplicate Unlocked (remote apps do this)
             // must not re-raise the shield. didWake still re-gates.
             ignore()
-        case (.shielded, .remoteSessionBegan), (.checkingPresence, .remoteSessionBegan):
-            dismissShieldForRemoteIfAllowed()
-        case (.unlocked, .remoteSessionEnded):
-            if skipShieldForRemoteSession, unlockedViaRemote {
-                unlockedViaRemote = false
-                shieldImmediately(reason: .passwordOnly)
-            } else {
-                ignore()
-            }
-        case (_, .remoteSessionBegan), (_, .remoteSessionEnded):
-            ignore()
         case (.shielded, .chordToggle), (.checkingPresence, .chordToggle):
-            unlockedViaRemote = false
             apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         case (.unlocked, .chordToggle),
              (.unlocked, .lockNow), (.checkingPresence, .lockNow):
@@ -282,7 +261,6 @@ final class SessionGate {
                 ignore()
             }
         case (.shielded, .passwordVerified), (.checkingPresence, .passwordVerified):
-            unlockedViaRemote = false
             apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         case (.shielded, .passwordRejected):
             apply(state: .shielded, overlay: .stay, tap: .stay, presence: .stay, bump: false, ui: .shakePassword)
@@ -293,7 +271,6 @@ final class SessionGate {
             apply(state: .disarmed, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         case (.shielded, .presenceMatched):
             if autoDismissOnPresenceWhileShielded, lastOverlayReason != .lockNow {
-                unlockedViaRemote = false
                 apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
             } else {
                 ignore()
@@ -354,41 +331,16 @@ final class SessionGate {
         clearWakePresence()
         if cachedPresenceOK, presenceOK {
             MacLockLog.file("unlock using cached wake presence")
-            unlockedViaRemote = false
             apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: true, ui: .none)
             return
         }
         if fromSyntheticMonitoring {
             state = .monitoring
         }
-        if bypassForRemoteSession() {
-            return
-        }
         if waitT {
             beginWaitTCheck()
         } else {
             shieldImmediately(reason: .passwordOnly)
-        }
-    }
-
-    @discardableResult
-    private func bypassForRemoteSession() -> Bool {
-        guard remoteBypassOK else { return false }
-        unlockedViaRemote = true
-        MacLockLog.file("remote bypass shield")
-        apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: true, ui: .none)
-        return true
-    }
-
-    private func dismissShieldForRemoteIfAllowed() {
-        guard skipShieldForRemoteSession else { ignore(); return }
-        switch lastOverlayReason {
-        case .lockNow, .recoveryRotate, .keychainUnavailable:
-            ignore()
-        case .waitTimeout, .passwordOnly, .relaunchWhileUnlocked, .none:
-            unlockedViaRemote = true
-            MacLockLog.file("remote dismiss shield reason=\(String(describing: lastOverlayReason))")
-            apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         }
     }
 
@@ -427,9 +379,6 @@ final class SessionGate {
         bump: Bool,
         ui: UICommand
     ) {
-        if state == .unlocked && next != .unlocked {
-            unlockedViaRemote = false
-        }
         if bump { generation &+= 1 }
         var resolvedPresence = presenceCmd
         if case .start = presenceCmd {

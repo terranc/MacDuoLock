@@ -10,8 +10,6 @@ enum EventTapError: Error {
 
 final class EventTapController: TapCommanding {
     var onBackdoor: (() -> Void)?
-    /// PID of a CGEvent posted by userspace (virtual keyboard / remote injector).
-    var onInjectedEvent: ((pid_t) -> Void)?
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private var localChordMonitor: Any?
@@ -34,11 +32,6 @@ final class EventTapController: TapCommanding {
 
     /// Always-on listeners so the chord works at the desktop after the overlay goes away.
     func installPersistentChordWatch() {
-        if !AXIsProcessTrusted() {
-            let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            _ = AXIsProcessTrustedWithOptions(opts)
-            MacLockLog.file("ax prompt trusted=\(AXIsProcessTrusted())")
-        }
         registerCarbonChord()
         if localChordMonitor == nil {
             localChordMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
@@ -46,10 +39,15 @@ final class EventTapController: TapCommanding {
                 return event
             }
         }
-        if globalChordMonitor == nil {
-            globalChordMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                _ = self?.noteChord(event, via: "global")
+        if AXIsProcessTrusted() {
+            if globalChordMonitor == nil {
+                globalChordMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                    _ = self?.noteChord(event, via: "global")
+                }
             }
+        } else if let globalChordMonitor {
+            NSEvent.removeMonitor(globalChordMonitor)
+            self.globalChordMonitor = nil
         }
         scheduleTapRestart()
     }
@@ -57,10 +55,6 @@ final class EventTapController: TapCommanding {
     private func fireChord(via source: String) {
         MacLockLog.file("chord heard via \(source)")
         DispatchQueue.main.async { [weak self] in self?.onBackdoor?() }
-    }
-
-    private func reportInjected(_ pid: pid_t) {
-        DispatchQueue.main.async { [weak self] in self?.onInjectedEvent?(pid) }
     }
 
     private func noteChord(_ event: NSEvent, via source: String) -> Bool {
@@ -94,9 +88,6 @@ final class EventTapController: TapCommanding {
             (UInt64(1) << CGEventType.keyDown.rawValue)
             | (UInt64(1) << CGEventType.keyUp.rawValue)
             | (UInt64(1) << CGEventType.flagsChanged.rawValue)
-            | (UInt64(1) << CGEventType.leftMouseDown.rawValue)
-            | (UInt64(1) << CGEventType.rightMouseDown.rawValue)
-            | (UInt64(1) << CGEventType.otherMouseDown.rawValue)
         guard let port = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
@@ -110,11 +101,6 @@ final class EventTapController: TapCommanding {
                         CGEvent.tapEnable(tap: tap, enable: true)
                     }
                     return Unmanaged.passUnretained(event)
-                }
-                let injectorPID = pid_t(event.getIntegerValueField(.eventSourceUnixProcessID))
-                if injectorPID > 0,
-                   type == .keyDown || type == .leftMouseDown || type == .rightMouseDown || type == .otherMouseDown {
-                    controller.reportInjected(injectorPID)
                 }
                 let code = event.getIntegerValueField(.keyboardEventKeycode)
                 let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0

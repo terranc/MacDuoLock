@@ -8,6 +8,7 @@ final class StatusItemController: NSObject, NSMenuItemValidation {
     var onLockNow: (() -> Void)?
     var onDetectPhone: (() -> Void)?
     var onSettings: (() -> Void)?
+    var onSetup: (() -> Void)?
     var onQuit: (() -> Void)?
     var isDetecting = false {
         didSet {
@@ -51,6 +52,7 @@ final class StatusItemController: NSObject, NSMenuItemValidation {
         settingsItem.keyEquivalent = ","
         settingsItem.keyEquivalentModifierMask = .command
         menu.addItem(settingsItem)
+        menu.addItem(item(NSLocalizedString("maclock.setup.check", comment: ""), "checklist", #selector(setup)))
         menu.addItem(.separator())
         let quitItem = item(NSLocalizedString("maclock.menu.quit", comment: ""), "xmark.circle", #selector(quit))
         quitItem.keyEquivalent = "q"
@@ -61,7 +63,8 @@ final class StatusItemController: NSObject, NSMenuItemValidation {
 
     private func applyButtonImage(for state: GateState) {
         let name = Self.symbolName(for: state)
-        let image = NSImage(systemSymbolName: name, accessibilityDescription: "MacDuoLock")
+        let image = NSImage(systemSymbolName: name, accessibilityDescription: "MacDuoLock")?
+            .withSymbolConfiguration(.init(pointSize: 17, weight: .regular))
         image?.isTemplate = true
         item?.button?.image = image
         item?.button?.toolTip = "MacDuoLock — " + statusTitle(state)
@@ -156,6 +159,7 @@ final class StatusItemController: NSObject, NSMenuItemValidation {
         onDetectPhone?()
     }
     @objc private func settings() { onSettings?() }
+    @objc private func setup() { onSetup?() }
     @objc private func quit() { onQuit?() }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {

@@ -9,7 +9,6 @@ final class SessionGateTests: XCTestCase {
     private var tap: TapSpy!
     private var presence: PresenceSpy!
     private var gate: SessionGate!
-    private var remoteActive = false
 
     override func setUp() {
         overlay = OverlaySpy()
@@ -17,9 +16,7 @@ final class SessionGateTests: XCTestCase {
         clock = FakeClock()
         tap = TapSpy()
         presence = PresenceSpy()
-        remoteActive = false
         gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence, clock: clock)
-        gate.isRemoteSessionActive = { [unowned self] in self.remoteActive }
     }
 
     private func arm() {
@@ -627,128 +624,36 @@ final class SessionGateTests: XCTestCase {
         XCTAssertFalse(overlay.isPresented)
     }
 
-    func testRemoteSessionSkipsUnlockShield() {
+    func testLegacyRemoteBypassPreferenceCannotSkipPasswordShield() {
+        let key = "skipShieldForRemoteSession"
+        let previousValue = UserDefaults.standard.object(forKey: key)
+        defer {
+            if let previousValue {
+                UserDefaults.standard.set(previousValue, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
+        UserDefaults.standard.set(true, forKey: key)
         arm()
-        remoteActive = true
-        gate.handle(.didLaunch(lockedConsole()))
-        gate.handle(.screenUnlocked)
-        XCTAssertEqual(gate.state, .unlocked)
-        XCTAssertFalse(overlay.isPresented)
-        XCTAssertTrue(gate.unlockedViaRemote)
-    }
 
-    func testRemoteSessionSkipsRelaunchShield() {
-        arm()
-        remoteActive = true
-        gate.handle(.didLaunch(unlockedConsole()))
-        XCTAssertEqual(gate.state, .unlocked)
-        XCTAssertFalse(overlay.isPresented)
-    }
-
-    func testRemoteSessionBeganDismissesPasswordOnlyShield() {
-        arm()
         gate.handle(.didLaunch(unlockedConsole()))
         XCTAssertEqual(gate.state, .shielded)
-        remoteActive = true
-        gate.handle(.remoteSessionBegan)
-        XCTAssertEqual(gate.state, .unlocked)
-        XCTAssertFalse(overlay.isPresented)
-        XCTAssertTrue(gate.unlockedViaRemote)
-    }
-
-    func testRemoteSessionDoesNotDismissExplicitLock() {
-        arm()
-        gate.handle(.didLaunch(unlockedConsole()))
-        gate.handle(.passwordVerified)
-        gate.handle(.lockNow)
-        XCTAssertEqual(overlay.lastReason, .lockNow)
-        remoteActive = true
-        gate.handle(.remoteSessionBegan)
-        XCTAssertEqual(gate.state, .shielded)
-        XCTAssertTrue(overlay.isPresented)
-    }
-
-    func testRemoteSessionEndReshieldsWhenUnlockedViaRemote() {
-        arm()
-        remoteActive = true
-        gate.handle(.didLaunch(lockedConsole()))
-        gate.handle(.screenUnlocked)
-        XCTAssertEqual(gate.state, .unlocked)
-        remoteActive = false
-        gate.handle(.remoteSessionEnded)
-        XCTAssertEqual(gate.state, .shielded)
-        XCTAssertEqual(overlay.lastReason, .passwordOnly)
-        XCTAssertFalse(gate.unlockedViaRemote)
-    }
-
-    func testRemoteSessionEndLeavesPasswordUnlockAlone() {
-        arm()
-        gate.handle(.didLaunch(unlockedConsole()))
-        gate.handle(.passwordVerified)
-        XCTAssertEqual(gate.state, .unlocked)
-        remoteActive = true
-        gate.handle(.remoteSessionBegan)
-        remoteActive = false
-        gate.handle(.remoteSessionEnded)
-        XCTAssertEqual(gate.state, .unlocked)
-        XCTAssertFalse(overlay.isPresented)
-    }
-
-    func testRemoteDisconnectBeforeSystemLockYieldsToSystemLockScreen() {
-        arm()
-        remoteActive = true
-        gate.handle(.didLaunch(unlockedConsole()))
-
-        remoteActive = false
-        gate.handle(.remoteSessionEnded)
+        XCTAssertEqual(overlay.lastReason, .relaunchWhileUnlocked)
         XCTAssertTrue(overlay.isPresented)
 
-        let monitor = ScreenLockMonitor(overlay: overlay, gate: gate, snapshotProvider: lockedConsole)
-        monitor.noteLocked()
-        gate.handle(.reconcile(lockedConsole()))
-        XCTAssertEqual(gate.state, .monitoring)
-        XCTAssertFalse(overlay.isPresented)
-
-        remoteActive = true
-        gate.handle(.remoteSessionBegan)
-        gate.handle(.screenUnlocked)
-        XCTAssertEqual(gate.state, .unlocked)
-        XCTAssertFalse(overlay.isPresented)
-    }
-
-    func testSystemLockBeforeRemoteDisconnectKeepsSystemLockScreen() {
-        arm()
-        remoteActive = true
-        gate.handle(.didLaunch(unlockedConsole()))
-
-        let monitor = ScreenLockMonitor(overlay: overlay, gate: gate, snapshotProvider: lockedConsole)
-        monitor.noteLocked()
-        remoteActive = false
-        gate.handle(.remoteSessionEnded)
-        gate.handle(.reconcile(lockedConsole()))
-        XCTAssertEqual(gate.state, .monitoring)
-        XCTAssertFalse(overlay.isPresented)
-        XCTAssertFalse(gate.unlockedViaRemote)
-    }
-
-    func testRemoteBypassDisabledStillShields() {
-        arm()
-        gate.skipShieldForRemoteSession = false
-        remoteActive = true
-        gate.handle(.didLaunch(lockedConsole()))
+        gate.handle(.passwordVerified)
+        gate.handle(.screenLocked)
         gate.handle(.screenUnlocked)
         XCTAssertEqual(gate.state, .shielded)
         XCTAssertEqual(overlay.lastReason, .passwordOnly)
-    }
+        XCTAssertTrue(overlay.isPresented)
 
-    func testDidWakeWithRemoteSessionDoesNotRegate() {
-        arm()
-        gate.handle(.didLaunch(unlockedConsole()))
         gate.handle(.passwordVerified)
-        remoteActive = true
         gate.handle(.didWake(unlockedConsole()))
-        XCTAssertEqual(gate.state, .unlocked)
-        XCTAssertFalse(overlay.isPresented)
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertEqual(overlay.lastReason, .passwordOnly)
+        XCTAssertTrue(overlay.isPresented)
     }
 
     func testDisarmedIgnoresUnlock() {

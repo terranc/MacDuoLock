@@ -34,6 +34,16 @@
 		3E5893199E09BF66C9AD26FA /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F752442BD3CB3C3BCF895B26 /* OnboardingFlow.swift */; };
 		200CD2142B928E9D1FEDA57D /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		BC3C6F0AB75E38A2B9743767 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200CD2142B928E9D1FEDA57D /* OnboardingView.swift */; };
+		DD56A01E214560FDE8001101 /* PermissionDragGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDragGuide.swift; sourceTree = "<group>"; };
+		DD56A01E214560FDE8001102 /* PermissionDragGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD56A01E214560FDE8001101 /* PermissionDragGuide.swift */; };
+		DD56A01E214560FDE8001103 /* PermissionDragGuideTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDragGuideTests.swift; sourceTree = "<group>"; };
+		DD56A01E214560FDE8001104 /* PermissionDragGuideTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD56A01E214560FDE8001103 /* PermissionDragGuideTests.swift */; };
+		CDA47A1197F043AB99000101 /* PermissionDragIllustration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDragIllustration.swift; sourceTree = "<group>"; };
+		CDA47A1197F043AB99000102 /* PermissionDragIllustration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA47A1197F043AB99000101 /* PermissionDragIllustration.swift */; };
+		CDA47A1197F043AB99000103 /* PermissionDragIllustrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionDragIllustrationTests.swift; sourceTree = "<group>"; };
+		CDA47A1197F043AB99000104 /* PermissionDragIllustrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA47A1197F043AB99000103 /* PermissionDragIllustrationTests.swift */; };
+		4A11AD111234500000000001 /* AppWindowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWindowLayout.swift; sourceTree = "<group>"; };
+		4A11AD111234500000000002 /* AppWindowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A11AD111234500000000001 /* AppWindowLayout.swift */; };
 		D6275B8D67D67EB9668FE350 /* AuxiliaryShieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuxiliaryShieldView.swift; sourceTree = "<group>"; };
 		CF18E526D4E92E73C73CD5D0 /* AuxiliaryShieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6275B8D67D67EB9668FE350 /* AuxiliaryShieldView.swift */; };
 		72AD2BCA9D63460B0BE1A554 /* OverlayWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowManager.swift; sourceTree = "<group>"; };
@@ -86,6 +96,8 @@
 		06866951A2001D60A8E1DDA9 /* OverlayWindowManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A781C908A0DD1B382DE1B18 /* OverlayWindowManagerTests.swift */; };
 		CAC78D0DE9029CFA5F9C0A12 /* PasswordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordStoreTests.swift; sourceTree = "<group>"; };
 		A77B3CA1941C1907BDB44D13 /* PasswordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC78D0DE9029CFA5F9C0A12 /* PasswordStoreTests.swift */; };
+		8E843A7612F94C9A9C57A101 /* SetupModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupModelTests.swift; sourceTree = "<group>"; };
+		8E843A7612F94C9A9C57A102 /* SetupModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E843A7612F94C9A9C57A101 /* SetupModelTests.swift */; };
 		51AFA6C1ECB3100D6C834ABB /* PresenceClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceClassifierTests.swift; sourceTree = "<group>"; };
 		D65BA25DB1F4EDCD3E4D28F8 /* PresenceClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51AFA6C1ECB3100D6C834ABB /* PresenceClassifierTests.swift */; };
 		8CA0D8A6A06F9D63385FBF72 /* PresenceMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceMonitorTests.swift; sourceTree = "<group>"; };
@@ -94,12 +106,6 @@
 		8BBFCD45C9A0F8F28932FD62 /* RateLimiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B077C53A32CD665D06226B /* RateLimiterTests.swift */; };
 		85642C7C2A90F56C2765E43B /* SessionGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionGateTests.swift; sourceTree = "<group>"; };
 		1240356A92F0C1D5B2B3F509 /* SessionGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85642C7C2A90F56C2765E43B /* SessionGateTests.swift */; };
-		3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlCatalog.swift; sourceTree = "<group>"; };
-		4B9D2F6E0A3C5D7B9E1F2A3B /* RemoteControlCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */; };
-		5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteSessionDetector.swift; sourceTree = "<group>"; };
-		6D1F4B8A2C5E7F9D1A3B4C5D /* RemoteSessionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */; };
-		7E2A5C9B3D6F8A0E2B4C5D6E /* RemoteControlCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlCatalogTests.swift; sourceTree = "<group>"; };
-		8F3B6D0C4E7A9B1F3C5D6E7F /* RemoteControlCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2A5C9B3D6F8A0E2B4C5D6E /* RemoteControlCatalogTests.swift */; };
 		12F1C9823B7D241C34392D7F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D112346025269318A39D73A /* MacLock.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacLock.entitlements; sourceTree = "<group>"; };
 		31622F5DB5AF44890238D799 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -160,6 +166,8 @@
 			children = (
 				F752442BD3CB3C3BCF895B26 /* OnboardingFlow.swift */,
 				200CD2142B928E9D1FEDA57D /* OnboardingView.swift */,
+				DD56A01E214560FDE8001101 /* PermissionDragGuide.swift */,
+				CDA47A1197F043AB99000101 /* PermissionDragIllustration.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -191,8 +199,6 @@
 			isa = PBXGroup;
 			children = (
 				684B480B97FCC265A27DE594 /* GateEffects.swift */,
-				3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */,
-				5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */,
 				DDF02EC45FC2BD4B8BDC1F7D /* ScreenLockMonitor.swift */,
 				F4AA91B835641B450AD76565 /* SessionEvent.swift */,
 				AE9BFD7900686EB263545ACD /* SessionGate.swift */,
@@ -205,6 +211,7 @@
 			children = (
 				80601537503F0838319365EB /* ArmDisarmController.swift */,
 				F5CAA84CDDD1D02029D95F77 /* SettingsView.swift */,
+				4A11AD111234500000000001 /* AppWindowLayout.swift */,
 				5F7CBE44409CF484B02628A0 /* StatusItemController.swift */,
 			);
 			path = Settings;
@@ -254,10 +261,12 @@
 				E8BA7C6934B326B0B00E3384 /* GateSecretsStoreTests.swift */,
 				9A781C908A0DD1B382DE1B18 /* OverlayWindowManagerTests.swift */,
 				CAC78D0DE9029CFA5F9C0A12 /* PasswordStoreTests.swift */,
+				8E843A7612F94C9A9C57A101 /* SetupModelTests.swift */,
+				DD56A01E214560FDE8001103 /* PermissionDragGuideTests.swift */,
+				CDA47A1197F043AB99000103 /* PermissionDragIllustrationTests.swift */,
 				51AFA6C1ECB3100D6C834ABB /* PresenceClassifierTests.swift */,
 				8CA0D8A6A06F9D63385FBF72 /* PresenceMonitorTests.swift */,
 				71B077C53A32CD665D06226B /* RateLimiterTests.swift */,
-				7E2A5C9B3D6F8A0E2B4C5D6E /* RemoteControlCatalogTests.swift */,
 				85642C7C2A90F56C2765E43B /* SessionGateTests.swift */,
 				D7EB1F216C1904DDE34425AB /* Fakes */,
 			);
@@ -318,6 +327,9 @@
 				A9E34524F956A3B8D5D9378F /* EventTapController.swift in Sources */,
 				3E5893199E09BF66C9AD26FA /* OnboardingFlow.swift in Sources */,
 				BC3C6F0AB75E38A2B9743767 /* OnboardingView.swift in Sources */,
+				DD56A01E214560FDE8001102 /* PermissionDragGuide.swift in Sources */,
+				CDA47A1197F043AB99000102 /* PermissionDragIllustration.swift in Sources */,
+				4A11AD111234500000000002 /* AppWindowLayout.swift in Sources */,
 				CF18E526D4E92E73C73CD5D0 /* AuxiliaryShieldView.swift in Sources */,
 				DE0502C48412F02805341053 /* OverlayWindowManager.swift in Sources */,
 				F91F098B4CD11FC6F08A82C8 /* PasswordPanelController.swift in Sources */,
@@ -329,8 +341,6 @@
 				919CDD8DFC75BE69B84AC62C /* PresenceMonitor.swift in Sources */,
 				6EAAE5AFFD2C6DBDF7AAAC97 /* GateEffects.swift in Sources */,
 				FE4B17EDDA7CC9CAA908CBEF /* ScreenLockMonitor.swift in Sources */,
-				4B9D2F6E0A3C5D7B9E1F2A3B /* RemoteControlCatalog.swift in Sources */,
-				6D1F4B8A2C5E7F9D1A3B4C5D /* RemoteSessionDetector.swift in Sources */,
 				7AB6C9B8BA488B805020487F /* SessionEvent.swift in Sources */,
 				D10062331D9294CCD95D47E9 /* SessionGate.swift in Sources */,
 				F74D33EE97E755C150DD23A8 /* ArmDisarmController.swift in Sources */,
@@ -381,10 +391,12 @@
 				684DFCF013CDD24FD7EA4AED /* GateSecretsStoreTests.swift in Sources */,
 				06866951A2001D60A8E1DDA9 /* OverlayWindowManagerTests.swift in Sources */,
 				A77B3CA1941C1907BDB44D13 /* PasswordStoreTests.swift in Sources */,
+				8E843A7612F94C9A9C57A102 /* SetupModelTests.swift in Sources */,
+				DD56A01E214560FDE8001104 /* PermissionDragGuideTests.swift in Sources */,
+				CDA47A1197F043AB99000104 /* PermissionDragIllustrationTests.swift in Sources */,
 				D65BA25DB1F4EDCD3E4D28F8 /* PresenceClassifierTests.swift in Sources */,
 				50B350A3A1B65FCFFFE19471 /* PresenceMonitorTests.swift in Sources */,
 				8BBFCD45C9A0F8F28932FD62 /* RateLimiterTests.swift in Sources */,
-				8F3B6D0C4E7A9B1F3C5D6E7F /* RemoteControlCatalogTests.swift in Sources */,
 				1240356A92F0C1D5B2B3F509 /* SessionGateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -520,13 +532,13 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MacLock/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.6.1;
+				MARKETING_VERSION = 0.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.maclock;
 				PRODUCT_MODULE_NAME = MacLock;
 				PRODUCT_NAME = MacDuoLock;
@@ -542,12 +554,12 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MacLock/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.6.1;
+				MARKETING_VERSION = 0.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.maclock;
 				PRODUCT_MODULE_NAME = MacLock;
 				PRODUCT_NAME = MacDuoLock;

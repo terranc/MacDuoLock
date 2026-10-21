@@ -156,6 +156,29 @@ struct ShortcutRecorder: NSViewRepresentable {
     }
 }
 
+enum SettingsPage: String, CaseIterable, Identifiable {
+    case general, permissions, password, shortcut
+
+    var id: Self { self }
+
+    var title: String {
+        NSLocalizedString("maclock.settings.page.\(rawValue).title", comment: "")
+    }
+
+    var navigationTitle: String {
+        NSLocalizedString("maclock.settings.navigation.\(rawValue)", comment: "")
+    }
+
+    var symbol: String {
+        switch self {
+        case .general: return "gearshape"
+        case .permissions: return "hand.raised"
+        case .password: return "key"
+        case .shortcut: return "keyboard"
+        }
+    }
+}
+
 @MainActor
 final class SettingsModel: ObservableObject {
     private let flow: OnboardingFlow
@@ -163,8 +186,9 @@ final class SettingsModel: ObservableObject {
     private let tap: EventTapController
     /// Lets the caller re-render the status menu so its key equivalent matches.
     var onShortcutChanged: (() -> Void)?
-    var onSkipRemoteShieldChanged: ((Bool) -> Void)?
+    var onDone: (() -> Void)?
 
+    @Published var page: SettingsPage = .general
     @Published var newPassword = ""
     @Published var confirmPassword = ""
     @Published var passwordMessage = ""
@@ -173,7 +197,6 @@ final class SettingsModel: ObservableObject {
     @Published var loginStatus: SMAppService.Status = .notRegistered
     @Published var loginMessage = ""
     @Published var loginFailed = false
-    @Published var skipRemoteShield = RemoteShieldPolicy.isEnabled
     @Published private(set) var isUpdating = false
 
     init(flow: OnboardingFlow, loginItems: LoginItemService, tap: EventTapController) {
@@ -195,17 +218,11 @@ final class SettingsModel: ObservableObject {
 
     func refresh() {
         shortcut = LockShortcutStore.current
-        skipRemoteShield = RemoteShieldPolicy.isEnabled
         applyLoginStatus()
     }
 
-    func setSkipRemoteShield(_ enabled: Bool) {
-        RemoteShieldPolicy.isEnabled = enabled
-        skipRemoteShield = enabled
-        onSkipRemoteShieldChanged?(enabled)
-    }
-
     func updatePassword() async {
+        guard !isUpdating else { return }
         isUpdating = true
         defer { isUpdating = false }
         NSApp.keyWindow?.endEditing(for: nil)
@@ -304,185 +321,279 @@ final class SettingsModel: ObservableObject {
     }
 }
 
+private func settingsText(_ key: String) -> String {
+    NSLocalizedString("maclock.settings." + key, comment: "")
+}
+
 struct SettingsRootView: View {
     @ObservedObject var model: SettingsModel
-
-    private enum Metrics {
-        static let width: CGFloat = 480
-        static let fieldWidth: CGFloat = 170
-    }
+    @ObservedObject var permissions: SetupModel
+    var onLeavePermissions: (() -> Void)?
 
     var body: some View {
-        Form {
-            passwordSection
-            shortcutSection
-            generalSection
+        AppWindowLayout {
+            sidebar
+        } content: {
+            switch model.page {
+            case .general: general
+            case .permissions: PermissionSetupView(model: permissions)
+            case .password: password
+            case .shortcut: shortcut
+            }
+        } footer: {
+            HStack {
+                Text(model.versionText).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                if model.page == .password {
+                    doneButton
+                } else {
+                    doneButton.keyboardShortcut(.defaultAction)
+                }
+            }
         }
-        .formStyle(.grouped)
-        // A grouped Form is a scroll view underneath. The content is short and
-        // fixed, so take its ideal height and let the window size to it rather
-        // than imposing a height that leaves a scroller behind.
-        .scrollDisabled(true)
-        .scrollIndicators(.never)
-        .frame(width: Metrics.width)
-        .fixedSize(horizontal: false, vertical: true)
         .onAppear { model.refresh() }
-    }
-
-    private var passwordSection: some View {
-        Section {
-            LabeledContent(NSLocalizedString("maclock.settings.password.new", comment: "")) {
-                MacSecureField(text: $model.newPassword)
-                    .frame(width: Metrics.fieldWidth, height: 22)
-                    .onChange(of: model.newPassword) { model.noteEdit() }
-            }
-            LabeledContent(NSLocalizedString("maclock.password.confirm", comment: "")) {
-                MacSecureField(text: $model.confirmPassword, onSubmit: {
-                    Task { await model.updatePassword() }
-                })
-                .frame(width: Metrics.fieldWidth, height: 22)
-                .onChange(of: model.confirmPassword) { model.noteEdit() }
-            }
-            LabeledContent {
-                Button(NSLocalizedString("maclock.settings.password.update", comment: "")) {
-                    Task { await model.updatePassword() }
-                }
-                .disabled(!model.canUpdate)
-            } label: {
-                Label {
-                    Text(model.ruleText)
-                } icon: {
-                    Image(systemName: model.meetsMinimum ? "checkmark.circle.fill" : "circle")
-                }
-                .font(.callout)
-                .foregroundStyle(model.meetsMinimum ? AnyShapeStyle(.secondary) : AnyShapeStyle(.tertiary))
-            }
-        } header: {
-            Text(NSLocalizedString("maclock.settings.section.password", comment: ""))
-        } footer: {
-            if !model.passwordMessage.isEmpty {
-                Label {
-                    Text(model.passwordMessage)
-                } icon: {
-                    Image(systemName: model.passwordFailed
-                        ? "exclamationmark.triangle.fill"
-                        : "checkmark.circle.fill")
-                }
-                .font(.callout)
-                .foregroundStyle(model.passwordFailed ? AnyShapeStyle(.red) : AnyShapeStyle(.green))
-            }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            model.refresh()
+        }
+        .onChange(of: model.page) { _, page in
+            if page != .permissions { onLeavePermissions?() }
         }
     }
 
-    private var shortcutSection: some View {
-        Section {
-            LabeledContent(NSLocalizedString("maclock.settings.shortcut.label", comment: "")) {
-                HStack(spacing: 10) {
-                    ShortcutRecorder(shortcut: model.shortcut) { model.capture($0) }
-                        .frame(width: 116, height: 24)
-                    Button(NSLocalizedString("maclock.settings.shortcut.reset", comment: "")) {
-                        model.resetShortcut()
+    private var doneButton: some View {
+        Button(settingsText("done")) { model.onDone?() }
+            .disabled(model.isUpdating)
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            AppSidebarBrand(subtitle: settingsText("caption"))
+            VStack(spacing: 6) {
+                ForEach(SettingsPage.allCases) { page in
+                    Button {
+                        NSApp.keyWindow?.endEditing(for: nil)
+                        model.page = page
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: page.symbol).frame(width: 22)
+                                .accessibilityHidden(true)
+                            Text(page.navigationTitle).lineLimit(1)
+                                .minimumScaleFactor(0.9)
+                            Spacer(minLength: 0)
+                        }
+                        .font(.callout.weight(model.page == page ? .semibold : .regular))
+                        .frame(minHeight: 20)
+                        .foregroundStyle(model.page == page ? Color.accentColor : .primary)
+                        .padding(.horizontal, 10).padding(.vertical, 10)
+                        .background(model.page == page ? Color.accentColor.opacity(0.1) : .clear,
+                                    in: RoundedRectangle(cornerRadius: 8))
+                        .contentShape(Rectangle())
                     }
-                    .controlSize(.small)
-                    .disabled(model.shortcut == .default)
+                    .buttonStyle(.plain)
+                    .disabled(model.isUpdating)
+                    .accessibilityAddTraits(model.page == page ? .isSelected : [])
+                    .accessibilityIdentifier("settings.page.\(page.rawValue)")
                 }
             }
-        } header: {
-            Text(NSLocalizedString("maclock.settings.section.shortcut", comment: ""))
-        } footer: {
-            Text(NSLocalizedString("maclock.settings.shortcut.hint", comment: ""))
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            Spacer()
+            Text(settingsText("sidebar.hint"))
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private var generalSection: some View {
-        Section {
-            Toggle(isOn: Binding(
-                get: { model.launchAtLogin },
-                set: { model.setLaunchAtLogin($0) }
-            )) {
-                Text(NSLocalizedString("maclock.settings.loginitem", comment: ""))
-            }
-            Toggle(isOn: Binding(
-                get: { model.skipRemoteShield },
-                set: { model.setSkipRemoteShield($0) }
-            )) {
-                Text(NSLocalizedString("maclock.settings.remote.skip", comment: ""))
-            }
-        } header: {
-            Text(NSLocalizedString("maclock.settings.section.general", comment: ""))
-        } footer: {
-            VStack(alignment: .leading, spacing: 6) {
-                if !model.loginMessage.isEmpty {
-                    Text(model.loginMessage)
-                        .font(.callout)
-                        .foregroundStyle(model.loginFailed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
-                }
-                if model.loginStatus == .requiresApproval {
-                    Button(NSLocalizedString("maclock.settings.loginitem.opensettings", comment: "")) {
-                        model.openLoginSettings()
+    private var general: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            heading(.general)
+            GroupBox {
+                VStack(alignment: .leading, spacing: 10) {
+                    Toggle(settingsText("loginitem"), isOn: Binding(
+                        get: { model.launchAtLogin },
+                        set: { model.setLaunchAtLogin($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    Text(settingsText("general.login.detail"))
+                        .font(.callout).foregroundStyle(.secondary)
+                    if !model.loginMessage.isEmpty {
+                        Text(model.loginMessage).font(.caption)
+                            .foregroundStyle(model.loginFailed ? Color.red : .secondary)
                     }
-                    .buttonStyle(.link)
-                    .font(.callout)
+                    if model.loginStatus == .requiresApproval {
+                        Button(settingsText("loginitem.opensettings")) { model.openLoginSettings() }
+                            .buttonStyle(.link).font(.callout)
+                    }
                 }
-                Text(NSLocalizedString("maclock.settings.remote.hint", comment: ""))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Text(model.versionText)
-                    .font(.footnote)
-                    .foregroundStyle(.tertiary)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+    }
+
+    private var password: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            heading(.password)
+            GroupBox {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(settingsText("password.new"))
+                        MacSecureField(text: $model.newPassword, onSubmit: updatePassword)
+                            .frame(height: 24)
+                            .accessibilityLabel(settingsText("password.new"))
+                            .onChange(of: model.newPassword) { model.noteEdit() }
+                        Text(NSLocalizedString("maclock.password.confirm", comment: "")).padding(.top, 8)
+                        MacSecureField(text: $model.confirmPassword, onSubmit: updatePassword)
+                            .frame(height: 24)
+                            .accessibilityLabel(NSLocalizedString("maclock.password.confirm", comment: ""))
+                            .onChange(of: model.confirmPassword) { model.noteEdit() }
+                    }
+                    .disabled(model.isUpdating)
+                    Label(model.ruleText, systemImage: model.meetsMinimum ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(.secondary)
+                    if !model.passwordMessage.isEmpty {
+                        Label(model.passwordMessage, systemImage: model.passwordFailed
+                              ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                            .foregroundStyle(model.passwordFailed ? Color.red : .green)
+                            .accessibilityIdentifier("settings.password.message")
+                    }
+                    HStack {
+                        Spacer()
+                        if model.isUpdating { ProgressView().controlSize(.small) }
+                        Button(settingsText("password.update"), action: updatePassword)
+                            .buttonStyle(.borderedProminent)
+                            .keyboardShortcut(.defaultAction)
+                            .disabled(!model.canUpdate)
+                    }
+                }
+                .font(.callout).padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Text(settingsText("password.note"))
+                .font(.callout).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var shortcut: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            heading(.shortcut)
+            GroupBox {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 12) {
+                        Text(settingsText("shortcut.label"))
+                        Spacer()
+                        ShortcutRecorder(shortcut: model.shortcut) { model.capture($0) }
+                            .frame(width: 116, height: 24)
+                            .accessibilityLabel(settingsText("shortcut.label"))
+                    }
+                    Divider()
+                    HStack {
+                        Text(settingsText("shortcut.hint"))
+                            .font(.callout).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        Button(settingsText("shortcut.reset")) { model.resetShortcut() }
+                            .disabled(model.shortcut == .default)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func heading(_ page: SettingsPage) -> some View {
+        AppPageHeading(title: page.title, subtitle: settingsText("page.\(page.rawValue).subtitle"))
+    }
+
+    private func updatePassword() {
+        guard model.canUpdate else { return }
+        Task { await model.updatePassword() }
     }
 }
 
-/// SwiftUI content in an AppKit window: the modern grouped-form look without
-/// depending on `showSettingsWindow:` to get the window on screen.
+/// A single settings window shares both its layout and permission page with setup.
 final class SettingsContentViewController: NSHostingController<SettingsRootView> {
     let model: SettingsModel
+    let permissions: SetupModel
+    private var dragGuide: PermissionDragGuide?
 
     var onShortcutChanged: (() -> Void)? {
         get { model.onShortcutChanged }
         set { model.onShortcutChanged = newValue }
     }
 
-    var onSkipRemoteShieldChanged: ((Bool) -> Void)? {
-        get { model.onSkipRemoteShieldChanged }
-        set { model.onSkipRemoteShieldChanged = newValue }
+    var onPermissionsChanged: (() -> Void)? {
+        get { permissions.onPermissionsChanged }
+        set { permissions.onPermissionsChanged = newValue }
     }
 
     init(flow: OnboardingFlow, loginItems: LoginItemService, tap: EventTapController) {
         let model = SettingsModel(flow: flow, loginItems: loginItems, tap: tap)
+        let permissions = SetupModel(flow: flow, loginItems: loginItems)
         self.model = model
-        super.init(rootView: SettingsRootView(model: model))
+        self.permissions = permissions
+        super.init(rootView: SettingsRootView(model: model, permissions: permissions))
+        rootView.onLeavePermissions = { [weak self] in self?.dismissPermissionGuide() }
+        permissions.onSettingsOpened = { [weak self] permission in
+            guard permission == .accessibility, self?.model.page == .permissions else { return }
+            self?.showPermissionGuide()
+        }
     }
 
     @MainActor required dynamic init?(coder: NSCoder) { nil }
+
+    func dismissPermissionGuide() { dragGuide?.dismiss() }
+
+    private func showPermissionGuide() {
+        if dragGuide == nil {
+            dragGuide = PermissionDragGuide(isAuthorized: { [weak self] in
+                self?.permissions.refresh()
+                return self?.permissions.accessibilityGranted ?? true
+            }, onReturnToSetup: { [weak self] in
+                NSApp.activate(ignoringOtherApps: true)
+                self?.view.window?.makeKeyAndOrderFront(nil)
+            })
+        }
+        dragGuide?.present()
+    }
 }
 
 @MainActor
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
+    let content: SettingsContentViewController
     var onClose: (() -> Void)?
 
     init(content: SettingsContentViewController) {
-        let window = NSWindow(contentViewController: content)
-        window.styleMask = [.titled, .closable]
-        window.title = NSLocalizedString("maclock.menu.settings", comment: "")
+        self.content = content
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: AppWindowMetrics.width, height: AppWindowMetrics.height),
+            styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false
+        )
+        window.title = NSLocalizedString("maclock.menu.settings", comment: "") + " — MacDuoLock"
+        window.isReleasedWhenClosed = false
+        window.contentViewController = content
         super.init(window: window)
         window.delegate = self
-        // `NSWindow(contentViewController:)` only adopts the SwiftUI content's
-        // size on the next layout pass. Centring before that would place a
-        // near-zero frame at the screen centre, and the window would then grow
-        // up and to the right from that point — so force the size first.
-        content.view.layoutSubtreeIfNeeded()
-        window.setContentSize(content.view.fittingSize)
+        content.model.onDone = { [weak self] in self?.close() }
+        window.setContentSize(NSSize(width: AppWindowMetrics.width, height: AppWindowMetrics.height))
         window.centerOnActiveScreen()
     }
 
     required init?(coder: NSCoder) { nil }
 
+    func selectPage(_ page: SettingsPage) {
+        guard !content.model.isUpdating else { return }
+        window?.endEditing(for: nil)
+        if page != .permissions { content.dismissPermissionGuide() }
+        content.model.page = page
+        content.model.refresh()
+        if page == .permissions { content.permissions.refresh() }
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool { !content.model.isUpdating }
+
     func windowWillClose(_ notification: Notification) {
+        content.dismissPermissionGuide()
         onClose?()
     }
 }

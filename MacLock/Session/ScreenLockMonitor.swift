@@ -6,8 +6,6 @@ final class ScreenLockMonitor: NSObject {
     let overlay: any OverlayCommanding
     let gate: SessionGate
     var snapshotProvider: () -> SessionSnapshot
-    /// Keep remote-session evidence warm before unlock / wake / reconcile.
-    var refreshRemote: (() -> Void)?
     private var wakeObserver: NSObjectProtocol?
     private var sleepObserver: NSObjectProtocol?
     private var screenObserver: NSObjectProtocol?
@@ -43,7 +41,6 @@ final class ScreenLockMonitor: NSObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                self.refreshRemote?()
                 self.gate.handle(.didWake(self.snapshotProvider()))
             }
         }
@@ -66,7 +63,6 @@ final class ScreenLockMonitor: NSObject {
         reconcileTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                self.refreshRemote?()
                 self.gate.handle(.reconcile(self.snapshotProvider()))
             }
         }
@@ -79,7 +75,6 @@ final class ScreenLockMonitor: NSObject {
 
     @objc private func didReceiveUnlock(_ notification: Notification) {
         MacLockLog.file("dnc screenIsUnlocked")
-        refreshRemote?()
         gate.handle(.screenUnlocked)
     }
 

@@ -30,7 +30,4 @@ enum SessionEvent: Equatable {
     case didWake(SessionSnapshot)
     case reconcile(SessionSnapshot)
     case keychainBecameAvailable
-    /// Inbound remote-control session (UU Remote, ToDesk, Screen Sharing, …).
-    case remoteSessionBegan
-    case remoteSessionEnded
 }
