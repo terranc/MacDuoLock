@@ -120,6 +120,125 @@ final class SessionGateTests: XCTestCase {
         XCTAssertEqual(overlay.lastReason, .passwordOnly)
     }
 
+    func testUnlockRefreshesCameraAuthorizationWithoutOpeningSettings() {
+        var authorized = false
+        gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence,
+                           clock: clock, cameraAuthorizationProvider: { authorized })
+        arm()
+        gate.presenceEnabled = true
+        gate.handle(.didLaunch(lockedConsole()))
+
+        authorized = true
+        gate.handle(.screenUnlocked)
+
+        XCTAssertTrue(gate.cameraAuthorized)
+        XCTAssertEqual(gate.state, .checkingPresence)
+        XCTAssertEqual(presence.started.count, 1)
+        matchWakePresence()
+        XCTAssertEqual(gate.state, .unlocked)
+        XCTAssertFalse(overlay.isPresented)
+    }
+
+    func testCameraAuthorizationRestoredWhileShieldedRestartsDetection() {
+        var authorized = false
+        gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence,
+                           clock: clock, cameraAuthorizationProvider: { authorized })
+        arm()
+        gate.presenceEnabled = true
+        gate.autoDismissOnPresenceWhileShielded = true
+        gate.handle(.didLaunch(lockedConsole()))
+        gate.handle(.screenUnlocked)
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertTrue(presence.started.isEmpty)
+
+        authorized = true
+        gate.handle(.reconcile(unlockedConsole()))
+        gate.handle(.reconcile(unlockedConsole()))
+
+        XCTAssertEqual(presence.started.count, 1)
+        XCTAssertEqual(overlay.log.filter { $0.hasPrefix("present:") }.count, 1)
+        matchWakePresence()
+        XCTAssertEqual(gate.state, .unlocked)
+        XCTAssertFalse(overlay.isPresented)
+    }
+
+    func testRestoringCameraAuthorizationDoesNotAutoUnlockManualLock() {
+        var authorized = false
+        gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence,
+                           clock: clock, cameraAuthorizationProvider: { authorized })
+        arm()
+        gate.presenceEnabled = true
+        gate.autoDismissOnPresenceWhileShielded = true
+        gate.handle(.didLaunch(unlockedConsole()))
+        gate.handle(.passwordVerified)
+        gate.handle(.lockNow)
+
+        authorized = true
+        gate.handle(.reconcile(unlockedConsole()))
+
+        XCTAssertTrue(presence.started.isEmpty)
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertEqual(overlay.lastReason, .lockNow)
+    }
+
+    func testRestoringCameraAuthorizationWhileSystemLockedWaitsForUnlock() {
+        var authorized = false
+        gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence,
+                           clock: clock, cameraAuthorizationProvider: { authorized })
+        arm()
+        gate.presenceEnabled = true
+        gate.autoDismissOnPresenceWhileShielded = true
+        gate.handle(.didLaunch(unlockedConsole()))
+
+        authorized = true
+        gate.handle(.reconcile(lockedConsole()))
+
+        XCTAssertTrue(presence.started.isEmpty)
+        XCTAssertEqual(gate.state, .monitoring)
+        XCTAssertFalse(overlay.isPresented)
+        gate.handle(.screenUnlocked)
+        XCTAssertEqual(gate.state, .checkingPresence)
+        XCTAssertEqual(presence.started.count, 1)
+    }
+
+    func testWakeRefreshesCameraAuthorizationBeforePresenceCheck() {
+        var authorized = false
+        gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence,
+                           clock: clock, cameraAuthorizationProvider: { authorized })
+        arm()
+        gate.presenceEnabled = true
+        gate.handle(.didLaunch(lockedConsole()))
+
+        authorized = true
+        gate.handle(.didWake(lockedConsole()))
+        XCTAssertEqual(presence.started.count, 1)
+        XCTAssertFalse(overlay.isPresented)
+        matchWakePresence()
+        gate.handle(.screenUnlocked)
+        XCTAssertEqual(gate.state, .unlocked)
+        XCTAssertFalse(overlay.isPresented)
+    }
+
+    func testRevokingCameraAuthorizationRejectsPendingMatch() {
+        var authorized = true
+        gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence,
+                           clock: clock, cameraAuthorizationProvider: { authorized })
+        arm()
+        gate.presenceEnabled = true
+        gate.autoDismissOnPresenceWhileShielded = true
+        gate.handle(.didLaunch(lockedConsole()))
+        gate.handle(.screenUnlocked)
+        let generation = gate.generation
+
+        authorized = false
+        matchWakePresence(generation: generation)
+
+        XCTAssertFalse(gate.cameraAuthorized)
+        XCTAssertEqual(gate.state, .shielded)
+        XCTAssertTrue(overlay.isPresented)
+        XCTAssertNotEqual(gate.generation, generation)
+    }
+
     func testMonitoringUnlockWithWaitTChecksPresence() {
         arm()
         gate.presenceEnabled = true

@@ -44,7 +44,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             matcher: { PresenceMatcherStore.load() },
             isCameraAuthorized: { Permissions.cameraAuthorized() }
         )
-        gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence, clock: clock)
+        gate = SessionGate(secrets: secrets, overlay: overlay, tap: tap, presence: presence,
+                           clock: clock, cameraAuthorizationProvider: Permissions.cameraAuthorized)
         if case .yes(let policy) = secrets.policyQuery() {
             gate.presenceEnabled = policy.presenceEnabled
             gate.autoDismissOnPresenceWhileShielded = policy.autoDismissOnPresenceWhileShielded

@@ -15,6 +15,7 @@ final class SessionGate {
     let tap: any TapCommanding
     let presence: any PresenceControlling
     let clock: any Clocking
+    private let cameraAuthorizationProvider: (() -> Bool)?
 
     var waitTOnUnlock: Bool = true
     var autoDismissOnPresenceWhileShielded: Bool = false
@@ -31,13 +32,15 @@ final class SessionGate {
         overlay: any OverlayCommanding,
         tap: any TapCommanding,
         presence: any PresenceControlling,
-        clock: any Clocking
+        clock: any Clocking,
+        cameraAuthorizationProvider: (() -> Bool)? = nil
     ) {
         self.secrets = secrets
         self.overlay = overlay
         self.tap = tap
         self.presence = presence
         self.clock = clock
+        self.cameraAuthorizationProvider = cameraAuthorizationProvider
     }
 
     var presenceOK: Bool { armed && presenceEnabled && cameraAuthorized }
@@ -52,35 +55,63 @@ final class SessionGate {
     var armed: Bool { keychainUp && hasPassword && !cleanDisarm }
 
     func handle(_ event: SessionEvent) {
+        // Refresh TCC even when the permissions window has never been opened.
+        // Update the snapshot first so restored access cannot unlock a locked/off-console session.
         switch event {
-        case .didLaunch(let snap):
+        case .didLaunch(let snap), .didWake(let snap), .reconcile(let snap):
             lastSnapshot = snap
+        case .screenLocked:
+            lastSnapshot.screenLocked = true
+        case .screenUnlocked:
+            lastSnapshot.screenLocked = false
+            lastSnapshot.onConsole = true
+        default:
+            break
+        }
+        refreshCameraAuthorization()
+
+        switch event {
+        case .didLaunch:
             handleDidLaunch()
-        case .didWake(let snap):
-            lastSnapshot = snap
+        case .didWake:
             handleDidWake()
-        case .reconcile(let snap):
-            lastSnapshot = snap
+        case .reconcile:
             handleReconcile()
         case .willSleep:
             clearWakePresence()
             apply(state: state, overlay: .stay, tap: .stay, presence: .stop, bump: true, ui: .none)
         case .screenLocked:
             if state != .monitoring { clearWakePresence() }
-            lastSnapshot.screenLocked = true
             if state == .monitoring, checkingWakePresence || wakePresenceMatchedAt != nil {
                 ignore()
                 break
             }
             handleRest(.screenLocked)
         case .screenUnlocked:
-            lastSnapshot.screenLocked = false
-            lastSnapshot.onConsole = true
             handleRest(.screenUnlocked)
         default:
             handleRest(event)
         }
         MacLockLog.file("handle \(String(describing: event)) -> \(state)")
+    }
+
+    private func refreshCameraAuthorization() {
+        guard let cameraAuthorizationProvider else { return }
+        let authorized = cameraAuthorizationProvider()
+        guard authorized != cameraAuthorized else { return }
+        cameraAuthorized = authorized
+        MacLockLog.file("camera authorization changed authorized=\(authorized)")
+        if !authorized {
+            clearWakePresence()
+            // Invalidate pending matches as well as stopping the scan.
+            apply(state: state == .checkingPresence ? .shielded : state,
+                  overlay: .stay, tap: .stay, presence: .stop, bump: true, ui: .none)
+        } else if state == .shielded, !lastSnapshot.screenLocked, lastSnapshot.onConsole,
+                  presenceOK, autoDismissOnPresenceWhileShielded,
+                  lastOverlayReason == .passwordOnly || lastOverlayReason == .relaunchWhileUnlocked {
+            apply(state: .shielded, overlay: .stay, tap: .stay,
+                  presence: .start(generation: 0), bump: true, ui: .none)
+        }
     }
 
     private func handleDidLaunch() {
@@ -392,7 +423,7 @@ final class SessionGate {
             bumpGeneration: bump,
             ui: ui
         )
-        MacLockLog.file("gate \(state) overlay=\(overlayCmd) tap=\(tapCmd) presence=\(resolvedPresence) armed=\(armed) presenceOK=\(presenceOK)")
+        MacLockLog.file("gate \(state) overlay=\(overlayCmd) tap=\(tapCmd) presence=\(resolvedPresence) armed=\(armed) presenceOK=\(presenceOK) presenceEnabled=\(presenceEnabled) cameraAuthorized=\(cameraAuthorized)")
         overlay.apply(overlayCmd)
         switch overlayCmd {
         case .present(let reason):
