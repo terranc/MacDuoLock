@@ -60,7 +60,7 @@ final class SetupModel: ObservableObject {
         flow: OnboardingFlow,
         loginItems: LoginItemService,
         permissionRequester: @escaping (AppPermission) async -> Void = Permissions.request(_:),
-        settingsOpener: @escaping @MainActor (AppPermission) -> Bool = Permissions.openSettings(for:),
+        settingsOpener: @escaping @MainActor (AppPermission) -> Bool = { @MainActor in Permissions.openSettings(for: $0) },
         statusProvider: @escaping (AppPermission) -> PermissionStatus = Permissions.status(for:)
     ) {
         self.flow = flow
