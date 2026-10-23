@@ -295,6 +295,29 @@ final class OverlayWindowManagerTests: XCTestCase {
         manager.dismissSync()
     }
 
+    func testRelockClearsBusyStateFromAbandonedPasswordVerification() {
+        let listing = FakeScreenListing(screens: [
+            ScreenDescriptor(displayID: 1, frame: .init(x: -3000, y: -3000, width: 100, height: 80), isPrimary: true),
+        ])
+        let manager = OverlayWindowManager(screens: listing)
+        manager.attachToScreen = false
+        defer { manager.dismissSync() }
+        manager.present(reason: .passwordOnly)
+        manager.passwordPanel.setBusy(true)
+
+        manager.dismissSync()
+        manager.present(reason: .lockNow)
+        XCTAssertFalse(manager.passwordPanel.submit.isHidden)
+        var submitted: String?
+        manager.passwordPanel.onSubmit = { submitted = $0 }
+        manager.passwordPanel.field.stringValue = "new-password"
+        manager.passwordPanel.refreshGhost()
+        manager.passwordPanel.field.sendAction(
+            manager.passwordPanel.field.action, to: manager.passwordPanel.field.target
+        )
+        XCTAssertEqual(submitted, "new-password")
+    }
+
     func testSelectAllAndReplaceLeavesNoUnderline() {
         let (panel, window) = makeOffscreenKeyPanel()
         defer { window.close() }

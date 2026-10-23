@@ -59,6 +59,9 @@
 "maclock.settings.loginitem.notfound" = "Login item not found. Move MacDuoLock to the Applications folder first.";
 "maclock.settings.loginitem.opensettings" = "Open System Settings";
 "maclock.settings.version" = "Version";
+"maclock.settings.remote.skip" = "Skip lock during remote control";
+"maclock.settings.remote.hint" = "Skip the second lock during incoming VNC control or when a listed app shows an active incoming session. Restore it on disconnect. App detection needs Accessibility access. Manual locks stay locked.";
+"maclock.settings.remote.apps" = "Candidate apps: %@. Some have not been tested on a live installation; unrecognized sessions still require your password.";
 "maclock.settings.caption" = "App Settings";
 "maclock.settings.navigation.general" = "General";
 "maclock.settings.navigation.permissions" = "Permissions";
@@ -67,7 +70,7 @@
 "maclock.settings.sidebar.hint" = "Manage your settings here. Changes take effect when saved or enabled.";
 "maclock.settings.done" = "Done";
 "maclock.settings.page.general.title" = "General Settings";
-"maclock.settings.page.general.subtitle" = "Manage how MacDuoLock starts.";
+"maclock.settings.page.general.subtitle" = "Manage startup and remote lock preferences.";
 "maclock.settings.page.permissions.title" = "Permissions";
 "maclock.settings.page.password.title" = "Unlock Password";
 "maclock.settings.page.password.subtitle" = "Update your MacDuoLock password so you can unlock when your iPhone is away.";

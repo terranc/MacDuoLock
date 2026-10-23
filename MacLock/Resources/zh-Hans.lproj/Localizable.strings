@@ -59,6 +59,9 @@
 "maclock.settings.loginitem.notfound" = "未找到登录项，请先把 MacDuoLock 移动到「应用程序」文件夹";
 "maclock.settings.loginitem.opensettings" = "打开系统设置";
 "maclock.settings.version" = "版本";
+"maclock.settings.remote.skip" = "远程控制时跳过桌面锁定";
+"maclock.settings.remote.hint" = "检测到入站 VNC 连接或名单内软件的明确被控状态时，跳过第二道锁，断开后恢复。白名单检测需要辅助功能权限；手动锁定仍需解锁。";
+"maclock.settings.remote.apps" = "候选名单：%@。部分软件尚未实机验证，识别失败时仍需输入口令。";
 "maclock.settings.caption" = "应用设置";
 "maclock.settings.navigation.general" = "通用设置";
 "maclock.settings.navigation.permissions" = "权限设置";
@@ -67,7 +70,7 @@
 "maclock.settings.sidebar.hint" = "在这里管理权限、口令和锁定偏好，随时调整。";
 "maclock.settings.done" = "完成";
 "maclock.settings.page.general.title" = "通用设置";
-"maclock.settings.page.general.subtitle" = "管理 MacDuoLock 的启动方式。";
+"maclock.settings.page.general.subtitle" = "管理 MacDuoLock 的启动方式和远程锁定偏好。";
 "maclock.settings.page.permissions.title" = "权限设置";
 "maclock.settings.page.password.title" = "解锁口令";
 "maclock.settings.page.password.subtitle" = "更新 MacDuoLock 的专属口令，iPhone 不在身边时也能解锁。";

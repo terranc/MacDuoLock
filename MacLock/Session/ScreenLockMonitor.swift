@@ -5,16 +5,21 @@ import Foundation
 final class ScreenLockMonitor: NSObject {
     let overlay: any OverlayCommanding
     let gate: SessionGate
+    let remote: LiveRemoteSessionDetector?
     var snapshotProvider: () -> SessionSnapshot
+    var onEventHandled: (() -> Void)?
     private var wakeObserver: NSObjectProtocol?
     private var sleepObserver: NSObjectProtocol?
+    private var displayWakeObserver: NSObjectProtocol?
     private var screenObserver: NSObjectProtocol?
     private var reconcileTimer: Timer?
 
-    init(overlay: any OverlayCommanding, gate: SessionGate, snapshotProvider: @escaping () -> SessionSnapshot) {
+    init(overlay: any OverlayCommanding, gate: SessionGate, snapshotProvider: @escaping () -> SessionSnapshot,
+         remote: LiveRemoteSessionDetector? = nil) {
         self.overlay = overlay
         self.gate = gate
         self.snapshotProvider = snapshotProvider
+        self.remote = remote
         super.init()
     }
 
@@ -41,7 +46,7 @@ final class ScreenLockMonitor: NSObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                self.gate.handle(.didWake(self.snapshotProvider()))
+                self.handleSessionEvent(.didWake(self.snapshotProvider()))
             }
         }
         sleepObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -50,7 +55,18 @@ final class ScreenLockMonitor: NSObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                self?.gate.handle(.willSleep)
+                self?.handleSessionEvent(.willSleep)
+            }
+        }
+        displayWakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.screensDidWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                // A display can wake without the Mac itself sleeping.
+                self.handleSessionEvent(.reconcile(self.snapshotProvider()))
             }
         }
         screenObserver = NotificationCenter.default.addObserver(
@@ -63,7 +79,7 @@ final class ScreenLockMonitor: NSObject {
         reconcileTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                self.gate.handle(.reconcile(self.snapshotProvider()))
+                self.handleSessionEvent(.reconcile(self.snapshotProvider()))
             }
         }
     }
@@ -75,12 +91,18 @@ final class ScreenLockMonitor: NSObject {
 
     @objc private func didReceiveUnlock(_ notification: Notification) {
         MacLockLog.file("dnc screenIsUnlocked")
-        gate.handle(.screenUnlocked)
+        handleSessionEvent(.screenUnlocked)
     }
 
     func noteLocked() {
         overlay.dismissSync()
-        gate.handle(.screenLocked)
+        handleSessionEvent(.screenLocked)
+    }
+
+    func handleSessionEvent(_ event: SessionEvent) {
+        remote?.prepare(for: event)
+        gate.handle(event)
+        onEventHandled?()
     }
 
     func uninstall() {
@@ -90,6 +112,9 @@ final class ScreenLockMonitor: NSObject {
         }
         if let sleepObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(sleepObserver)
+        }
+        if let displayWakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(displayWakeObserver)
         }
         if let screenObserver {
             NotificationCenter.default.removeObserver(screenObserver)

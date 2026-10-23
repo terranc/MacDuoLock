@@ -413,7 +413,7 @@ final class PasswordPanelController: NSViewController {
         field.abortEditing()
         field.stringValue = ""
         (field.cell as? NSTextFieldCell)?.stringValue = ""
-        refreshGhost()
+        setBusy(false)
     }
 
     func enterRecoveryMode() {

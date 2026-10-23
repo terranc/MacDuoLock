@@ -70,6 +70,12 @@
 		7AB6C9B8BA488B805020487F /* SessionEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AA91B835641B450AD76565 /* SessionEvent.swift */; };
 		AE9BFD7900686EB263545ACD /* SessionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionGate.swift; sourceTree = "<group>"; };
 		D10062331D9294CCD95D47E9 /* SessionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE9BFD7900686EB263545ACD /* SessionGate.swift */; };
+		5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteSessionDetector.swift; sourceTree = "<group>"; };
+		6D1F4B8A2C5E7F9D1A3B4C5D /* RemoteSessionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */; };
+		3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlCatalog.swift; sourceTree = "<group>"; };
+		4B9D2F6E0A3C5D7B9E1F2A3B /* RemoteControlCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */; };
+		63D90E73817D4A4E998E10A1 /* RemoteControlSessionReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlSessionReader.swift; sourceTree = "<group>"; };
+		63D90E73817D4A4E998E10A2 /* RemoteControlSessionReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63D90E73817D4A4E998E10A1 /* RemoteControlSessionReader.swift */; };
 		80601537503F0838319365EB /* ArmDisarmController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArmDisarmController.swift; sourceTree = "<group>"; };
 		F74D33EE97E755C150DD23A8 /* ArmDisarmController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80601537503F0838319365EB /* ArmDisarmController.swift */; };
 		F5CAA84CDDD1D02029D95F77 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -106,6 +112,12 @@
 		8BBFCD45C9A0F8F28932FD62 /* RateLimiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B077C53A32CD665D06226B /* RateLimiterTests.swift */; };
 		85642C7C2A90F56C2765E43B /* SessionGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionGateTests.swift; sourceTree = "<group>"; };
 		1240356A92F0C1D5B2B3F509 /* SessionGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85642C7C2A90F56C2765E43B /* SessionGateTests.swift */; };
+		62C80E73817D4A4E998E10A1 /* RemoteSessionDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteSessionDetectorTests.swift; sourceTree = "<group>"; };
+		62C80E73817D4A4E998E10A2 /* RemoteSessionDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62C80E73817D4A4E998E10A1 /* RemoteSessionDetectorTests.swift */; };
+		64E90E73817D4A4E998E10A1 /* RemoteControlCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlCatalogTests.swift; sourceTree = "<group>"; };
+		64E90E73817D4A4E998E10A2 /* RemoteControlCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E90E73817D4A4E998E10A1 /* RemoteControlCatalogTests.swift */; };
+		65F90E73817D4A4E998E10A1 /* ScreenLockMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenLockMonitorTests.swift; sourceTree = "<group>"; };
+		65F90E73817D4A4E998E10A2 /* ScreenLockMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65F90E73817D4A4E998E10A1 /* ScreenLockMonitorTests.swift */; };
 		12F1C9823B7D241C34392D7F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D112346025269318A39D73A /* MacLock.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacLock.entitlements; sourceTree = "<group>"; };
 		31622F5DB5AF44890238D799 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -202,6 +214,9 @@
 				DDF02EC45FC2BD4B8BDC1F7D /* ScreenLockMonitor.swift */,
 				F4AA91B835641B450AD76565 /* SessionEvent.swift */,
 				AE9BFD7900686EB263545ACD /* SessionGate.swift */,
+				5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */,
+				3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */,
+				63D90E73817D4A4E998E10A1 /* RemoteControlSessionReader.swift */,
 			);
 			path = Session;
 			sourceTree = "<group>";
@@ -268,6 +283,9 @@
 				8CA0D8A6A06F9D63385FBF72 /* PresenceMonitorTests.swift */,
 				71B077C53A32CD665D06226B /* RateLimiterTests.swift */,
 				85642C7C2A90F56C2765E43B /* SessionGateTests.swift */,
+				62C80E73817D4A4E998E10A1 /* RemoteSessionDetectorTests.swift */,
+				64E90E73817D4A4E998E10A1 /* RemoteControlCatalogTests.swift */,
+				65F90E73817D4A4E998E10A1 /* ScreenLockMonitorTests.swift */,
 				D7EB1F216C1904DDE34425AB /* Fakes */,
 			);
 			path = MacLockTests;
@@ -343,6 +361,9 @@
 				FE4B17EDDA7CC9CAA908CBEF /* ScreenLockMonitor.swift in Sources */,
 				7AB6C9B8BA488B805020487F /* SessionEvent.swift in Sources */,
 				D10062331D9294CCD95D47E9 /* SessionGate.swift in Sources */,
+				6D1F4B8A2C5E7F9D1A3B4C5D /* RemoteSessionDetector.swift in Sources */,
+				4B9D2F6E0A3C5D7B9E1F2A3B /* RemoteControlCatalog.swift in Sources */,
+				63D90E73817D4A4E998E10A2 /* RemoteControlSessionReader.swift in Sources */,
 				F74D33EE97E755C150DD23A8 /* ArmDisarmController.swift in Sources */,
 				8073BF7E0716D2A0A16A3E2F /* SettingsView.swift in Sources */,
 				287723A92652D21F22247F83 /* StatusItemController.swift in Sources */,
@@ -398,6 +419,9 @@
 				50B350A3A1B65FCFFFE19471 /* PresenceMonitorTests.swift in Sources */,
 				8BBFCD45C9A0F8F28932FD62 /* RateLimiterTests.swift in Sources */,
 				1240356A92F0C1D5B2B3F509 /* SessionGateTests.swift in Sources */,
+				62C80E73817D4A4E998E10A2 /* RemoteSessionDetectorTests.swift in Sources */,
+				64E90E73817D4A4E998E10A2 /* RemoteControlCatalogTests.swift in Sources */,
+				65F90E73817D4A4E998E10A2 /* ScreenLockMonitorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -532,13 +556,13 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MacLock/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.7.1;
+				MARKETING_VERSION = 0.7.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.maclock;
 				PRODUCT_MODULE_NAME = MacLock;
 				PRODUCT_NAME = MacDuoLock;
@@ -554,12 +578,12 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MacLock/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MARKETING_VERSION = 0.7.1;
+				MARKETING_VERSION = 0.7.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.maclock;
 				PRODUCT_MODULE_NAME = MacLock;
 				PRODUCT_NAME = MacDuoLock;

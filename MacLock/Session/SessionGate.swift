@@ -9,6 +9,7 @@ final class SessionGate {
     private(set) var lastEffects = GateEffects()
     private(set) var lastSnapshot = SessionSnapshot(screenLocked: false, onConsole: true)
     private(set) var lastOverlayReason: OverlayReason?
+    private var requiredUnlockReason: OverlayReason?
 
     let secrets: any GateSecretsStoring
     let overlay: any OverlayCommanding
@@ -22,6 +23,9 @@ final class SessionGate {
     var presenceEnabled: Bool = false
     var cameraAuthorized: Bool = false
     var presenceTimeout: TimeInterval = 3
+    var skipShieldForRemoteSession = false
+    var isRemoteSessionActive: () -> Bool = { false }
+    private var unlockedViaRemote = false
     private var checkingWakePresence = false
     private var wakePresenceMatchedAt: TimeInterval?
 
@@ -45,6 +49,9 @@ final class SessionGate {
 
     var presenceOK: Bool { armed && presenceEnabled && cameraAuthorized }
     var waitT: Bool { waitTOnUnlock && presenceOK }
+    private var remoteBypassOK: Bool {
+        requiredUnlockReason == nil && armed && skipShieldForRemoteSession && isRemoteSessionActive()
+    }
 
     var keychainUp: Bool {
         !secrets.passwordQuery().isUnavailable && !secrets.cleanDisarmQuery().isUnavailable
@@ -78,6 +85,7 @@ final class SessionGate {
         case .reconcile:
             handleReconcile()
         case .willSleep:
+            unlockedViaRemote = false
             clearWakePresence()
             apply(state: state, overlay: .stay, tap: .stay, presence: .stop, bump: true, ui: .none)
         case .screenLocked:
@@ -106,7 +114,7 @@ final class SessionGate {
             // Invalidate pending matches as well as stopping the scan.
             apply(state: state == .checkingPresence ? .shielded : state,
                   overlay: .stay, tap: .stay, presence: .stop, bump: true, ui: .none)
-        } else if state == .shielded, !lastSnapshot.screenLocked, lastSnapshot.onConsole,
+        } else if requiredUnlockReason == nil, state == .shielded, !lastSnapshot.screenLocked, lastSnapshot.onConsole,
                   presenceOK, autoDismissOnPresenceWhileShielded,
                   lastOverlayReason == .passwordOnly || lastOverlayReason == .relaunchWhileUnlocked {
             apply(state: .shielded, overlay: .stay, tap: .stay,
@@ -141,6 +149,8 @@ final class SessionGate {
         }
         if snap.screenLocked || !snap.onConsole {
             apply(state: .monitoring, overlay: .dismissSync, tap: .stop, presence: .stop, bump: true, ui: .none)
+        } else if bypassForRemoteSession() {
+            return
         } else {
             let p: PresenceCommand = autoDismissOnPresenceWhileShielded && presenceOK ? .start(generation: 0) : .stop
             apply(
@@ -158,10 +168,12 @@ final class SessionGate {
         clearWakePresence()
         guard armed else { ignore(); return }
         if lastSnapshot.screenLocked || !lastSnapshot.onConsole {
-            checkingWakePresence = lastSnapshot.screenLocked && lastSnapshot.onConsole && presenceOK
+            checkingWakePresence = requiredUnlockReason == nil && lastSnapshot.screenLocked && lastSnapshot.onConsole && presenceOK
             apply(state: .monitoring, overlay: .dismissSync, tap: .stop,
                   presence: checkingWakePresence ? .start(generation: 0) : .stop, bump: true, ui: .none)
             if checkingWakePresence { schedulePresenceTimeout() }
+        } else if state == .shielded, lastOverlayReason == .lockNow || lastOverlayReason == .recoveryRotate {
+            ignore()
         } else {
             enterUnlockPath(fromSyntheticMonitoring: true)
         }
@@ -173,6 +185,7 @@ final class SessionGate {
     }
 
     private func handleReconcile() {
+        if reconcileRemoteSession() { return }
         if !armed {
             ignore()
             return
@@ -207,6 +220,10 @@ final class SessionGate {
             return
         }
         if case .presenceTimeout(let gen) = event, gen != generation {
+            ignore()
+            return
+        }
+        if case .passwordVerified(let gen) = event, gen != generation {
             ignore()
             return
         }
@@ -301,7 +318,7 @@ final class SessionGate {
             secrets.writeCleanDisarm()
             apply(state: .disarmed, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
         case (.shielded, .presenceMatched):
-            if autoDismissOnPresenceWhileShielded, lastOverlayReason != .lockNow {
+            if autoDismissOnPresenceWhileShielded, requiredUnlockReason == nil {
                 apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: false, ui: .none)
             } else {
                 ignore()
@@ -344,6 +361,7 @@ final class SessionGate {
             return
         }
         if lastSnapshot.screenLocked == false && lastSnapshot.onConsole && armed {
+            if bypassForRemoteSession() { return }
             apply(
                 state: .shielded,
                 overlay: .present(.relaunchWhileUnlocked),
@@ -360,7 +378,13 @@ final class SessionGate {
     private func enterUnlockPath(fromSyntheticMonitoring: Bool) {
         let cachedPresenceOK = wakePresenceMatchedAt.map { clock.uptime - $0 < 180 } ?? false
         clearWakePresence()
+        if let reason = requiredUnlockReason {
+            apply(state: .shielded, overlay: .present(reason), tap: .start, presence: .stop,
+                  bump: true, ui: reason == .recoveryRotate ? .rotatePassword : .none)
+            return
+        }
         if cachedPresenceOK, presenceOK {
+            unlockedViaRemote = false
             MacLockLog.file("unlock using cached wake presence")
             apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: true, ui: .none)
             return
@@ -368,10 +392,45 @@ final class SessionGate {
         if fromSyntheticMonitoring {
             state = .monitoring
         }
+        if bypassForRemoteSession() { return }
         if waitT {
             beginWaitTCheck()
         } else {
             shieldImmediately(reason: .passwordOnly)
+        }
+    }
+
+    @discardableResult
+    private func bypassForRemoteSession() -> Bool {
+        guard remoteBypassOK else { return false }
+        clearWakePresence()
+        unlockedViaRemote = true
+        MacLockLog.file("remote bypass shield")
+        apply(state: .unlocked, overlay: .dismissSync, tap: .stop, presence: .stop, bump: true, ui: .none)
+        return true
+    }
+
+    private func reconcileRemoteSession() -> Bool {
+        guard !lastSnapshot.screenLocked, lastSnapshot.onConsole else { return false }
+        if unlockedViaRemote {
+            guard !remoteBypassOK else { return false }
+            unlockedViaRemote = false
+            clearWakePresence()
+            if !keychainUp {
+                shieldImmediately(reason: .keychainUnavailable, allowPresenceDismiss: false)
+            } else if armed {
+                shieldImmediately(reason: .passwordOnly)
+            } else {
+                apply(state: .disarmed, overlay: .dismissSync, tap: .stop, presence: .stop, bump: true, ui: .none)
+            }
+            return true
+        }
+        guard state == .shielded || state == .checkingPresence else { return false }
+        switch lastOverlayReason {
+        case .passwordOnly, .relaunchWhileUnlocked, .waitTimeout:
+            return bypassForRemoteSession()
+        case .lockNow, .recoveryRotate, .keychainUnavailable, .none:
+            return false
         }
     }
 
@@ -410,6 +469,8 @@ final class SessionGate {
         bump: Bool,
         ui: UICommand
     ) {
+        if next != .unlocked { unlockedViaRemote = false }
+        if next == .unlocked || next == .disarmed { requiredUnlockReason = nil }
         if bump { generation &+= 1 }
         var resolvedPresence = presenceCmd
         if case .start = presenceCmd {
@@ -428,6 +489,7 @@ final class SessionGate {
         switch overlayCmd {
         case .present(let reason):
             lastOverlayReason = reason
+            if reason == .lockNow || reason == .recoveryRotate { requiredUnlockReason = reason }
         case .dismissSync:
             lastOverlayReason = nil
         case .stay:

@@ -186,6 +186,7 @@ final class SettingsModel: ObservableObject {
     private let tap: EventTapController
     /// Lets the caller re-render the status menu so its key equivalent matches.
     var onShortcutChanged: (() -> Void)?
+    var onRemotePolicyChanged: ((Bool) -> Void)?
     var onDone: (() -> Void)?
 
     @Published var page: SettingsPage = .general
@@ -194,6 +195,7 @@ final class SettingsModel: ObservableObject {
     @Published var passwordMessage = ""
     @Published var passwordFailed = false
     @Published var shortcut = LockShortcutStore.current
+    @Published private(set) var skipRemoteShield = RemoteShieldPolicy.isEnabled
     @Published var loginStatus: SMAppService.Status = .notRegistered
     @Published var loginMessage = ""
     @Published var loginFailed = false
@@ -218,7 +220,16 @@ final class SettingsModel: ObservableObject {
 
     func refresh() {
         shortcut = LockShortcutStore.current
+        skipRemoteShield = RemoteShieldPolicy.isEnabled
         applyLoginStatus()
+    }
+
+    func setSkipRemoteShield(_ enabled: Bool) {
+        skipRemoteShield = enabled
+        RemoteShieldPolicy.isEnabled = enabled
+        flow.gate.skipShieldForRemoteSession = enabled
+        onRemotePolicyChanged?(enabled)
+        flow.gate.handle(.reconcile(sessionSnapshot()))
     }
 
     func updatePassword() async {
@@ -422,6 +433,22 @@ struct SettingsRootView: View {
                         Button(settingsText("loginitem.opensettings")) { model.openLoginSettings() }
                             .buttonStyle(.link).font(.callout)
                     }
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            GroupBox {
+                VStack(alignment: .leading, spacing: 10) {
+                    Toggle(settingsText("remote.skip"), isOn: Binding(
+                        get: { model.skipRemoteShield },
+                        set: { model.setSkipRemoteShield($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    Text(settingsText("remote.hint"))
+                        .font(.callout).foregroundStyle(.secondary)
+                    Text(String(format: settingsText("remote.apps"),
+                                RemoteControlCatalog.applications.map(\.name).joined(separator: "、")))
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)

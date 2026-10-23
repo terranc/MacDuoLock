@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem = StatusItemController()
     var loginItems = LoginItemService()
     var tap = EventTapController()
+    var remote = LiveRemoteSessionDetector()
     var quitIntent: QuitIntent = .none
     var positivelyDisarmedOrUnregistered = false
     private var sigterm: DispatchSourceSignal?
@@ -56,6 +57,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         gate.waitTOnUnlock = true
         gate.presenceTimeout = 5
         gate.cameraAuthorized = Permissions.cameraAuthorized()
+        gate.skipShieldForRemoteSession = RemoteShieldPolicy.isEnabled
+        remote.setEnabled(gate.skipShieldForRemoteSession)
+        // System events preflight this cache before the gate can present a shield.
+        gate.isRemoteSessionActive = { [weak self] in self?.remote.isActive ?? false }
+        remote.onChange = { [weak self] _ in
+            guard let self else { return }
+            // Refresh lock/console state before reacting to a connection change.
+            self.gate.handle(.reconcile(sessionSnapshot()))
+            self.statusItem.refresh()
+        }
+        remote.start()
         presence.onMatched = { [weak self] evidence in
             self?.gate.handle(.presenceMatched(evidence))
         }
@@ -78,6 +90,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             NSApp.setActivationPolicy(.accessory)
         }
+        remote.prepare(for: .didLaunch(snapshot))
         gate.handle(.didLaunch(snapshot))
         if gate.state == .disarmed, passwordQ.isNo {
             positivelyDisarmedOrUnregistered = true
@@ -87,7 +100,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             positivelyDisarmedOrUnregistered = true
         }
 
-        lockMonitor = ScreenLockMonitor(overlay: overlay, gate: gate, snapshotProvider: sessionSnapshot)
+        lockMonitor = ScreenLockMonitor(overlay: overlay, gate: gate, snapshotProvider: sessionSnapshot, remote: remote)
+        lockMonitor.onEventHandled = { [weak self] in self?.statusItem.refresh() }
         lockMonitor.install()
         overlay.passwordPanel.onSubmit = { [weak self] text in
             Task { await self?.submitSecret(text) }
@@ -99,6 +113,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         tap.installPersistentChordWatch()
         installSIGTERMSource()
         statusItem.refresh()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        remote.stop()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -116,18 +134,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lastChordUptime = now
         overlay.attachToScreen = true
         MacLockLog.file("chord toggle from \(gate.state)")
+        remote.prepare(for: .chordToggle)
         gate.handle(.chordToggle)
         statusItem.refresh()
     }
 
+    private var passwordVerificationID: UInt64 = 0
+
     private func submitSecret(_ text: String) async {
+        passwordVerificationID &+= 1
+        let verificationID = passwordVerificationID
+        let verificationGeneration = gate.generation
         overlay.passwordPanel.setBusy(true)
+        defer {
+            if verificationID == passwordVerificationID { overlay.passwordPanel.setBusy(false) }
+        }
         let result = await passwords.verify(text)
+        guard verificationID == passwordVerificationID, verificationGeneration == gate.generation else {
+            MacLockLog.file("ignore password verification from previous generation")
+            return
+        }
         MacLockLog.file("verify result=\(result) len=\(text.count)")
-        overlay.passwordPanel.setBusy(false)
         switch result {
         case .accepted:
-            gate.handle(.passwordVerified)
+            gate.handle(.passwordVerified(generation: verificationGeneration))
             overlay.passwordPanel.field.stringValue = ""
         case .rejected:
             gate.handle(.passwordRejected)
@@ -193,6 +223,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         overlay.attachToScreen = true
+        remote.prepare(for: .lockNow)
         gate.handle(.lockNow)
         statusItem.refresh()
     }
@@ -258,6 +289,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsWindow == nil {
             let content = SettingsContentViewController(flow: onboarding, loginItems: loginItems, tap: tap)
             content.onShortcutChanged = { [weak self] in self?.statusItem.refresh() }
+            content.model.onRemotePolicyChanged = { [weak self] enabled in
+                self?.remote.setEnabled(enabled)
+            }
             content.onPermissionsChanged = { [weak self] in self?.tap.installPersistentChordWatch() }
             let controller = SettingsWindowController(content: content)
             controller.onClose = { [weak self] in

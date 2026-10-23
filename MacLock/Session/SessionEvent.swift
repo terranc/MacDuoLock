@@ -19,7 +19,7 @@ enum SessionEvent: Equatable {
     case screenUnlocked
     case presenceMatched(PresenceEvidence)
     case presenceTimeout(generation: UInt64)
-    case passwordVerified
+    case passwordVerified(generation: UInt64)
     case passwordRejected
     /// Menu / explicit lock: raise the password overlay immediately.
     case lockNow
