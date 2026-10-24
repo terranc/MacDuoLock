@@ -75,6 +75,26 @@ final class ScreenLockMonitorTests: XCTestCase {
         XCTAssertFalse(overlay.log.contains { $0.hasPrefix("present:") })
     }
 
+    func testTimerPrecheckPreservesRemoteEvidenceBeforeDelayedLockEvent() {
+        beginRemoteDesktop()
+        status = .unavailable
+        snapshot = locked
+        clock.advance(2)
+        detector.poll(snapshot: snapshot)
+        clock.advance(2)
+        detector.poll(snapshot: snapshot)
+
+        monitor.noteLocked()
+        clock.advance(60)
+        snapshot = unlocked
+        monitor.handleSessionEvent(.screenUnlocked)
+
+        XCTAssertTrue(detector.isActive)
+        XCTAssertEqual(gate.state, .unlocked)
+        XCTAssertFalse(overlay.isPresented)
+        XCTAssertFalse(overlay.log.contains { $0.hasPrefix("present:") })
+    }
+
     func testEventPrecheckIsSilentAndGateProviderPerformsNoAdditionalReads() {
         gate.handle(.didLaunch(locked))
         status = application

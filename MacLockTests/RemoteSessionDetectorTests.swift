@@ -145,6 +145,115 @@ final class RemoteSessionDetectorTests: XCTestCase {
         XCTAssertEqual(changes, [true, false])
     }
 
+    func testTimerObservesNativeLockBeforeDelayedLockNotificationExpiresEvidence() {
+        status = application
+        detector.refresh()
+        status = .unavailable
+        clock.advance(2)
+        detector.poll(snapshot: locked)
+        clock.advance(2)
+        detector.poll(snapshot: locked)
+
+        XCTAssertTrue(detector.isActive)
+        detector.prepare(for: .screenLocked)
+        clock.advance(60)
+        detector.prepare(for: .screenUnlocked)
+        XCTAssertTrue(detector.isActive)
+    }
+
+    func testTimerPollPublishesChangesOnceAndReadsStatusOnce() {
+        var changes: [Bool] = []
+        detector.onChange = { changes.append($0) }
+        status = application
+        detector.poll(snapshot: unlocked)
+        XCTAssertEqual(readCount, 1)
+        XCTAssertEqual(changes, [true])
+
+        status = .unavailable
+        clock.advance(2)
+        detector.poll(snapshot: locked)
+        XCTAssertEqual(readCount, 2)
+        XCTAssertEqual(changes, [true])
+
+        status = .local
+        detector.poll(snapshot: locked)
+        XCTAssertEqual(readCount, 3)
+        XCTAssertEqual(changes, [true, false])
+    }
+
+    func testTimerCannotReviveEvidenceAlreadyExpiredBeforeNativeLockWasObserved() {
+        status = application
+        detector.poll(snapshot: unlocked)
+        status = .unavailable
+        clock.advance(3.1)
+
+        detector.poll(snapshot: locked)
+        detector.prepare(for: .screenLocked)
+        detector.poll(snapshot: unlocked)
+
+        XCTAssertFalse(detector.isActive)
+    }
+
+    func testTimerSourceLossNotifiesOnceAndCannotRestoreDiscardedEvidence() {
+        var changes: [Bool] = []
+        detector.onChange = { changes.append($0) }
+        status = application
+        detector.poll(snapshot: unlocked)
+        status = .unavailable
+        sourceIsAvailable = false
+
+        detector.poll(snapshot: locked)
+        detector.poll(snapshot: locked)
+        XCTAssertEqual(changes, [true, false])
+        sourceIsAvailable = true
+        detector.poll(snapshot: unlocked)
+
+        XCTAssertFalse(detector.isActive)
+        XCTAssertEqual(changes, [true, false])
+    }
+
+    func testTimerPollDoesNotRecreateEvidenceWhileSleepingOrOffConsole() {
+        status = application
+        detector.poll(snapshot: unlocked)
+        detector.prepare(for: .willSleep)
+        let readsBeforeSleep = readCount
+        detector.poll(snapshot: locked)
+        XCTAssertEqual(readCount, readsBeforeSleep)
+        XCTAssertFalse(detector.isActive)
+
+        detector.prepare(for: .didWake(unlocked))
+        XCTAssertTrue(detector.isActive)
+        let readsBeforeLeavingConsole = readCount
+        detector.poll(snapshot: SessionSnapshot(screenLocked: true, onConsole: false))
+        XCTAssertEqual(readCount, readsBeforeLeavingConsole)
+        XCTAssertFalse(detector.isActive)
+    }
+
+    func testTimerPollCannotRenewExpiredPreflightOrConsumedUnlockGrace() {
+        status = application
+        detector.poll(snapshot: unlocked)
+        status = .unavailable
+        detector.poll(snapshot: locked)
+        clock.advance(90)
+        detector.poll(snapshot: unlocked)
+        XCTAssertTrue(detector.isActive)
+
+        clock.advance(1)
+        detector.poll(snapshot: locked)
+        clock.advance(1)
+        detector.poll(snapshot: unlocked)
+        XCTAssertFalse(detector.isActive)
+
+        status = application
+        detector.poll(snapshot: locked)
+        status = .unavailable
+        clock.advance(180.1)
+        detector.poll(snapshot: locked)
+        XCTAssertFalse(detector.isActive)
+        detector.poll(snapshot: unlocked)
+        XCTAssertFalse(detector.isActive)
+    }
+
     func testApplicationAndVNCStatusesArePositiveEvidence() {
         XCTAssertTrue(application.isRemote)
         XCTAssertTrue(RemoteSessionStatus.remote.isRemote)

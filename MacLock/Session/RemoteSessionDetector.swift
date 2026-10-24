@@ -120,12 +120,20 @@ final class LiveRemoteSessionDetector {
 
     func start() {
         stop()
-        refresh()
+        poll(snapshot: sessionSnapshot())
         let timer = DispatchSource.makeTimerSource(queue: .main)
         timer.schedule(deadline: .now() + 1, repeating: 1)
-        timer.setEventHandler { [weak self] in self?.refresh() }
+        timer.setEventHandler { [weak self] in self?.poll(snapshot: sessionSnapshot()) }
         timer.resume()
         self.timer = timer
+    }
+
+    func poll(snapshot: SessionSnapshot) {
+        // AX can disappear before the lock notification arrives. Observe the
+        // native lock state before a timer read can discard that recent evidence.
+        let wasActive = isActive
+        prepare(for: .reconcile(snapshot))
+        if wasActive != isActive { onChange?(isActive) }
     }
 
     func stop() {
