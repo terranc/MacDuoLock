@@ -131,6 +131,9 @@ final class RemoteControlCatalogTests: XCTestCase {
         XCTAssertNil(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in
             [RemoteControlProcessSocket(kind: .tcp, isEstablished: false, localPort: 52000, remotePort: 3478)]
         }))
+        XCTAssertNil(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in
+            [RemoteControlProcessSocket(kind: .tcp, isEstablished: true, localPort: 52001, remotePort: 7890)]
+        }))
     }
 
     func testUUHostHelperSessionTransportMatches() {
@@ -140,11 +143,8 @@ final class RemoteControlCatalogTests: XCTestCase {
             processIdentifier: 13424
         )
         let udp = RemoteControlProcessSocket(kind: .udp, isEstablished: false, localPort: 52195, remotePort: 0)
-        let media = RemoteControlProcessSocket(kind: .tcp, isEstablished: true, localPort: 52001, remotePort: 40000)
         let listen = RemoteControlProcessSocket(kind: .tcp, isEstablished: false, isListening: true, localPort: 63730, remotePort: 0)
         XCTAssertEqual(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in [udp] })?.signingIdentifier,
-                       "com.netease.uuremote.server")
-        XCTAssertEqual(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in [media] })?.signingIdentifier,
                        "com.netease.uuremote.server")
         XCTAssertEqual(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in [listen] })?.signingIdentifier,
                        "com.netease.uuremote.server")

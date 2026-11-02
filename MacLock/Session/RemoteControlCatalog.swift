@@ -87,15 +87,15 @@ enum RemoteControlCatalog {
         return sockets.contains(where: isSessionTransport)
     }
 
-    /// Idle UURemoteServer keeps only TCP 443. A live controlled session binds UDP
-    /// and listens on TCP; lsof often shows those sockets without a remote peer.
+    /// Idle UURemoteServer keeps outbound TCP, including 443 and a local proxy.
+    /// A live controlled session binds UDP and listens on TCP. Those sockets often
+    /// have no remote peer. An established outbound connection is not a session.
     static func isSessionTransport(_ socket: RemoteControlProcessSocket) -> Bool {
         switch socket.kind {
         case .udp:
             return socket.localPort > 0
         case .tcp:
-            if socket.isListening && socket.localPort > 0 { return true }
-            return socket.isEstablished && socket.remotePort > 0 && socket.remotePort != 443
+            return socket.isListening && socket.localPort > 0
         }
     }
 

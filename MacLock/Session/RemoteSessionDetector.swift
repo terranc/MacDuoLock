@@ -142,7 +142,7 @@ struct RemoteSessionProbe: Equatable {
 }
 
 // debt: The capture key is undocumented and TCP/5900 only covers conventional VNC.
-// UU host helpers use non-443 TCP or UDP as the live-session signal; missing signals keep the shield up.
+// UU host helpers use a bound UDP socket or a TCP listen port as the live-session signal; missing signals keep the shield up.
 @MainActor
 final class LiveRemoteSessionDetector {
     private let readProbe: () -> RemoteSessionProbe
