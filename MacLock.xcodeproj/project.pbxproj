@@ -76,6 +76,8 @@
 		4B9D2F6E0A3C5D7B9E1F2A3B /* RemoteControlCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */; };
 		63D90E73817D4A4E998E10A1 /* RemoteControlSessionReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlSessionReader.swift; sourceTree = "<group>"; };
 		63D90E73817D4A4E998E10A2 /* RemoteControlSessionReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63D90E73817D4A4E998E10A1 /* RemoteControlSessionReader.swift */; };
+		73E01F84928E5B5F0A9F21B2 /* RemoteControlHostProcessReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlHostProcessReader.swift; sourceTree = "<group>"; };
+		73E01F84928E5B5F0A9F21B3 /* RemoteControlHostProcessReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73E01F84928E5B5F0A9F21B2 /* RemoteControlHostProcessReader.swift */; };
 		80601537503F0838319365EB /* ArmDisarmController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArmDisarmController.swift; sourceTree = "<group>"; };
 		F74D33EE97E755C150DD23A8 /* ArmDisarmController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80601537503F0838319365EB /* ArmDisarmController.swift */; };
 		F5CAA84CDDD1D02029D95F77 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -217,6 +219,7 @@
 				5C0E3A7F1B4D6E8C0F2A3B4C /* RemoteSessionDetector.swift */,
 				3A8C1E5D9F2B4C6A8D0E1F2A /* RemoteControlCatalog.swift */,
 				63D90E73817D4A4E998E10A1 /* RemoteControlSessionReader.swift */,
+				73E01F84928E5B5F0A9F21B2 /* RemoteControlHostProcessReader.swift */,
 			);
 			path = Session;
 			sourceTree = "<group>";
@@ -364,6 +367,7 @@
 				6D1F4B8A2C5E7F9D1A3B4C5D /* RemoteSessionDetector.swift in Sources */,
 				4B9D2F6E0A3C5D7B9E1F2A3B /* RemoteControlCatalog.swift in Sources */,
 				63D90E73817D4A4E998E10A2 /* RemoteControlSessionReader.swift in Sources */,
+				73E01F84928E5B5F0A9F21B3 /* RemoteControlHostProcessReader.swift in Sources */,
 				F74D33EE97E755C150DD23A8 /* ArmDisarmController.swift in Sources */,
 				8073BF7E0716D2A0A16A3E2F /* SettingsView.swift in Sources */,
 				287723A92652D21F22247F83 /* StatusItemController.swift in Sources */,

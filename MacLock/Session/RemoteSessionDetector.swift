@@ -27,8 +27,12 @@ enum RemoteSessionStatus: Equatable {
     static func sourceIsAvailable(_ source: Self) -> Bool {
         switch source {
         case .application(let bundleIdentifier, let pid):
-            guard AXIsProcessTrusted(), let app = NSRunningApplication(processIdentifier: pid) else { return false }
-            return !app.isTerminated && app.bundleIdentifier == bundleIdentifier
+            guard let app = NSRunningApplication(processIdentifier: pid), !app.isTerminated else { return false }
+            if app.bundleIdentifier == bundleIdentifier { return AXIsProcessTrusted() }
+            guard RemoteControlCatalog.application(for: bundleIdentifier)?
+                .hostSigningIdentifiers.contains(bundleIdentifier) == true,
+                  RemoteControlHostProcessReader.signingIdentifier(of: app) == bundleIdentifier else { return false }
+            return RemoteControlCatalog.confirmedHostStillActive(RemoteControlProcessSocketReader.sockets(for: pid))
         case .remote:
             return Self(screenCaptured: true, connections: readConnections()).isRemote
         case .local, .unavailable:
@@ -55,16 +59,57 @@ enum RemoteSessionStatus: Equatable {
         } ? .remote : .local
     }
 
-    static func read() -> Self {
+    static func read() -> Self { probe().status }
+
+    static func probe() -> RemoteSessionProbe {
         let result = RemoteControlSessionReader.read()
         if let window = result.windows.first(where: { RemoteControlCatalog.activeApplication(in: [$0]) != nil }),
            let pid = window.processIdentifier {
-            return .application(bundleIdentifier: window.bundleIdentifier, processIdentifier: pid)
+            return RemoteSessionProbe(
+                status: .application(bundleIdentifier: window.bundleIdentifier, processIdentifier: pid),
+                detail: "ax=window bundle=\(window.bundleIdentifier) pid=\(pid)"
+            )
+        }
+        let hosts = RemoteControlHostProcessReader.processes()
+        var socketSummary: [String] = []
+        var unreadSockets = false
+        var matched: RemoteControlHostProcess?
+        for process in hosts {
+            let sockets = RemoteControlProcessSocketReader.sockets(for: process.processIdentifier)
+            if sockets == nil { unreadSockets = true }
+            socketSummary.append(describe(process: process, sockets: sockets))
+            if matched == nil, let sockets, sockets.contains(where: RemoteControlCatalog.isSessionTransport) {
+                matched = process
+            }
+        }
+        if let process = matched {
+            return RemoteSessionProbe(
+                status: .application(bundleIdentifier: process.signingIdentifier, processIdentifier: process.processIdentifier),
+                detail: "host=\(process.signingIdentifier) pid=\(process.processIdentifier) sockets=\(socketSummary.joined(separator: ","))"
+            )
         }
         let session = CGSessionCopyCurrentDictionary() as? [String: Any]
         let captured = session?["CGSSessionScreenIsCaptured"] as? Bool
         let vnc = Self(screenCaptured: captured, connections: captured == true ? readConnections() : nil)
-        return Self(whitelist: result.isComplete ? .local : .unavailable, vnc: vnc)
+        let whitelist: Self = (!result.isComplete || unreadSockets) ? .unavailable : .local
+        let status = Self(whitelist: whitelist, vnc: vnc)
+        return RemoteSessionProbe(
+            status: status,
+            detail: "ax=\(result.isComplete ? "complete" : "incomplete") windows=\(result.windows.count) hosts=\(socketSummary.isEmpty ? "none" : socketSummary.joined(separator: ",")) captured=\(captured.map(String.init(describing:)) ?? "nil") vnc=\(vnc)"
+        )
+    }
+
+    private static func describe(process: RemoteControlHostProcess, sockets: [RemoteControlProcessSocket]?) -> String {
+        let id = "\(process.signingIdentifier)#\(process.processIdentifier)"
+        guard let sockets else { return "\(id)=unread" }
+        if sockets.isEmpty { return "\(id)=none" }
+        let parts = sockets.map { socket in
+            let remote = socket.remotePort == 0 ? "*" : String(socket.remotePort)
+            let kind = socket.kind == .tcp ? "tcp" : "udp"
+            let mark = socket.isEstablished ? "E" : (socket.isListening ? "L" : "")
+            return "\(kind):\(remote)\(mark)"
+        }
+        return "\(id)=\(parts.joined(separator: "+"))"
     }
 
     private static func readConnections() -> String? {
@@ -91,15 +136,21 @@ enum RemoteSessionStatus: Equatable {
     }
 }
 
+struct RemoteSessionProbe: Equatable {
+    var status: RemoteSessionStatus
+    var detail: String
+}
+
 // debt: The capture key is undocumented and TCP/5900 only covers conventional VNC.
-// Add other protocols only with verified live-session evidence; missing signals keep the shield up.
+// UU host helpers use non-443 TCP or UDP as the live-session signal; missing signals keep the shield up.
 @MainActor
 final class LiveRemoteSessionDetector {
-    private let readStatus: () -> RemoteSessionStatus
+    private let readProbe: () -> RemoteSessionProbe
     private let clock: any Clocking
     private let sourceAvailable: (RemoteSessionStatus) -> Bool
     private var timer: DispatchSourceTimer?
     private var lastStatus: RemoteSessionStatus?
+    private var lastDetail = ""
     private var lastConfirmed: RemoteSessionStatus?
     private var lastConfirmedAt: TimeInterval?
     private var preparingUnlock = false
@@ -110,10 +161,20 @@ final class LiveRemoteSessionDetector {
     private(set) var isActive = false
     var onChange: ((Bool) -> Void)?
 
-    init(readStatus: @escaping () -> RemoteSessionStatus = RemoteSessionStatus.read,
+    convenience init(readStatus: @escaping () -> RemoteSessionStatus,
+                     clock: any Clocking = SystemClock(),
+                     sourceAvailable: @escaping (RemoteSessionStatus) -> Bool = RemoteSessionStatus.sourceIsAvailable) {
+        self.init(
+            readProbe: { RemoteSessionProbe(status: readStatus(), detail: "") },
+            clock: clock,
+            sourceAvailable: sourceAvailable
+        )
+    }
+
+    init(readProbe: @escaping () -> RemoteSessionProbe = RemoteSessionStatus.probe,
          clock: any Clocking = SystemClock(),
          sourceAvailable: @escaping (RemoteSessionStatus) -> Bool = RemoteSessionStatus.sourceIsAvailable) {
-        self.readStatus = readStatus
+        self.readProbe = readProbe
         self.clock = clock
         self.sourceAvailable = sourceAvailable
     }
@@ -178,7 +239,10 @@ final class LiveRemoteSessionDetector {
         default:
             return
         }
-        refresh(notify: false)
+        let forceLog: Bool
+        if case .screenUnlocked = event { forceLog = true }
+        else { forceLog = false }
+        refresh(notify: false, forceLog: forceLog)
     }
 
     private func beginUnlockPreparation() {
@@ -210,17 +274,19 @@ final class LiveRemoteSessionDetector {
         unavailableGraceUntil = nil
     }
 
-    func refresh(notify: Bool = true) {
+    func refresh(notify: Bool = true, forceLog: Bool = false) {
         let wasActive = isActive
         guard enabled, !sleeping else {
             reset()
             if notify, wasActive { onChange?(false) }
             return
         }
-        let status = readStatus()
-        if status != lastStatus {
-            MacLockLog.file("remote session status=\(status)")
+        let probe = readProbe()
+        let status = probe.status
+        if forceLog || status != lastStatus || probe.detail != lastDetail {
+            MacLockLog.file("remote session status=\(status) \(probe.detail)")
             lastStatus = status
+            lastDetail = probe.detail
         }
         if status.isRemote {
             lastConfirmed = status

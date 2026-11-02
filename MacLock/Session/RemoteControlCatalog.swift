@@ -7,15 +7,39 @@ struct RemoteControlWindowSnapshot: Equatable {
     var processIdentifier: Int32? = nil
 }
 
+struct RemoteControlHostProcess: Equatable {
+    var name: String
+    var signingIdentifier: String
+    var processIdentifier: Int32
+}
+
+struct RemoteControlProcessSocket: Equatable {
+    enum Kind: Equatable {
+        case tcp
+        case udp
+    }
+
+    var kind: Kind
+    var isEstablished: Bool
+    var isListening: Bool = false
+    var localPort: UInt16
+    var remotePort: UInt16
+}
+
 enum RemoteControlCatalog {
     struct Application: Equatable {
         let name: String
         let bundleIdentifiers: [String]
         var bundlePrefixes: [String] = []
+        var hostSigningIdentifiers: [String] = []
     }
 
     static let applications: [Application] = [
-        Application(name: "UU 远程", bundleIdentifiers: ["com.netease.uuremote"]),
+        Application(
+            name: "UU 远程",
+            bundleIdentifiers: ["com.netease.uuremote"],
+            hostSigningIdentifiers: ["com.netease.uuremote.server"]
+        ),
         Application(name: "ToDesk", bundleIdentifiers: ["com.youqu.todesk.mac"]),
         Application(name: "向日葵 / AweSun", bundleIdentifiers: ["com.oray.sunlogin.macclient"]),
         Application(name: "RayLink", bundleIdentifiers: ["de.RayLink"]),
@@ -38,6 +62,40 @@ enum RemoteControlCatalog {
         applications.first {
             $0.bundleIdentifiers.contains(bundleIdentifier)
                 || $0.bundlePrefixes.contains { prefix in bundleIdentifier.hasPrefix(prefix) }
+                || $0.hostSigningIdentifiers.contains(bundleIdentifier)
+        }
+    }
+
+    /// Host helpers that keep an inbound desktop session, without a matching AX window.
+    static func activeHostProcess(
+        in processes: [RemoteControlHostProcess],
+        sockets: (Int32) -> [RemoteControlProcessSocket]?
+    ) -> RemoteControlHostProcess? {
+        for process in processes {
+            guard let app = application(for: process.signingIdentifier),
+                  app.hostSigningIdentifiers.contains(process.signingIdentifier),
+                  let sockets = sockets(process.processIdentifier),
+                  sockets.contains(where: isSessionTransport) else { continue }
+            return process
+        }
+        return nil
+    }
+
+    /// A failed socket read keeps the confirmed session. Only a successful idle read ends it.
+    static func confirmedHostStillActive(_ sockets: [RemoteControlProcessSocket]?) -> Bool {
+        guard let sockets else { return true }
+        return sockets.contains(where: isSessionTransport)
+    }
+
+    /// Idle UURemoteServer keeps only TCP 443. A live controlled session binds UDP
+    /// and listens on TCP; lsof often shows those sockets without a remote peer.
+    static func isSessionTransport(_ socket: RemoteControlProcessSocket) -> Bool {
+        switch socket.kind {
+        case .udp:
+            return socket.localPort > 0
+        case .tcp:
+            if socket.isListening && socket.localPort > 0 { return true }
+            return socket.isEstablished && socket.remotePort > 0 && socket.remotePort != 443
         }
     }
 

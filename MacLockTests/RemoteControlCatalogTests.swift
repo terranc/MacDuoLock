@@ -7,6 +7,7 @@ final class RemoteControlCatalogTests: XCTestCase {
     func testKnownBundleIdentifiersResolveToExpectedApplication() {
         let identities = [
             ("com.netease.uuremote", "UU 远程"),
+            ("com.netease.uuremote.server", "UU 远程"),
             ("com.youqu.todesk.mac", "ToDesk"),
             ("com.oray.sunlogin.macclient", "向日葵 / AweSun"),
             ("de.RayLink", "RayLink"),
@@ -104,6 +105,80 @@ final class RemoteControlCatalogTests: XCTestCase {
             )
             XCTAssertNil(RemoteControlCatalog.activeApplication(in: [window]), text)
         }
+    }
+
+    func testFailedSocketReadDoesNotEndAConfirmedHostSession() {
+        XCTAssertTrue(RemoteControlCatalog.confirmedHostStillActive(nil))
+        XCTAssertFalse(RemoteControlCatalog.confirmedHostStillActive([
+            RemoteControlProcessSocket(kind: .tcp, isEstablished: true, localPort: 1, remotePort: 443)
+        ]))
+        XCTAssertTrue(RemoteControlCatalog.confirmedHostStillActive([
+            RemoteControlProcessSocket(kind: .udp, isEstablished: false, localPort: 52195, remotePort: 0)
+        ]))
+    }
+
+    func testUUHostHelperKeepaliveDoesNotProveAnActiveSession() {
+        let process = RemoteControlHostProcess(
+            name: "UU 远程",
+            signingIdentifier: "com.netease.uuremote.server",
+            processIdentifier: 13424
+        )
+        XCTAssertNil(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in
+            [RemoteControlProcessSocket(kind: .tcp, isEstablished: true, localPort: 64536, remotePort: 443)]
+        }))
+        XCTAssertNil(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in [] }))
+        XCTAssertNil(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in nil }))
+        XCTAssertNil(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in
+            [RemoteControlProcessSocket(kind: .tcp, isEstablished: false, localPort: 52000, remotePort: 3478)]
+        }))
+    }
+
+    func testUUHostHelperSessionTransportMatches() {
+        let process = RemoteControlHostProcess(
+            name: "UU 远程",
+            signingIdentifier: "com.netease.uuremote.server",
+            processIdentifier: 13424
+        )
+        let udp = RemoteControlProcessSocket(kind: .udp, isEstablished: false, localPort: 52195, remotePort: 0)
+        let media = RemoteControlProcessSocket(kind: .tcp, isEstablished: true, localPort: 52001, remotePort: 40000)
+        let listen = RemoteControlProcessSocket(kind: .tcp, isEstablished: false, isListening: true, localPort: 63730, remotePort: 0)
+        XCTAssertEqual(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in [udp] })?.signingIdentifier,
+                       "com.netease.uuremote.server")
+        XCTAssertEqual(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in [media] })?.signingIdentifier,
+                       "com.netease.uuremote.server")
+        XCTAssertEqual(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in [listen] })?.signingIdentifier,
+                       "com.netease.uuremote.server")
+    }
+
+    func testAgentAndHelperIdentitiesDoNotCountAsHostHelpers() {
+        for identifier in ["com.netease.uuremote.agent", "com.netease.uuremote.helper", "com.netease.uuremote.daemon"] {
+            let process = RemoteControlHostProcess(
+                name: "UU 远程", signingIdentifier: identifier, processIdentifier: 1
+            )
+            XCTAssertNil(RemoteControlCatalog.activeHostProcess(in: [process], sockets: { _ in
+                [RemoteControlProcessSocket(kind: .udp, isEstablished: false, localPort: 1, remotePort: 1)]
+            }), identifier)
+        }
+    }
+
+    func testLsofSocketLinesParseEndpoints() {
+        let tcp = RemoteControlProcessSocketReader.parse(
+            "UURemoteS 13424 terranc 31u IPv4 0x1 TCP 198.18.0.1:64536->198.18.0.194:443 (ESTABLISHED)"
+        )
+        XCTAssertEqual(tcp, RemoteControlProcessSocket(kind: .tcp, isEstablished: true, localPort: 64536, remotePort: 443))
+        let udp = RemoteControlProcessSocketReader.parse(
+            "UURemoteS 13424 terranc 77u IPv4 0x1 UDP 192.168.0.37:52195"
+        )
+        XCTAssertEqual(udp, RemoteControlProcessSocket(kind: .udp, isEstablished: false, localPort: 52195, remotePort: 0))
+        let listen = RemoteControlProcessSocketReader.parse(
+            "UURemoteS 13424 terranc 85u IPv4 0x1 TCP 192.168.0.37:63730 (LISTEN)"
+        )
+        XCTAssertEqual(listen, RemoteControlProcessSocket(kind: .tcp, isEstablished: false, isListening: true, localPort: 63730, remotePort: 0))
+        let ipv6 = RemoteControlProcessSocketReader.parse(
+            "UURemoteS 13424 terranc 41u IPv6 0x1 TCP [fe80::1]:1025->[fe80::2]:40000 (ESTABLISHED)"
+        )
+        XCTAssertEqual(ipv6, RemoteControlProcessSocket(kind: .tcp, isEstablished: true, localPort: 1025, remotePort: 40000))
+        XCTAssertNil(RemoteControlProcessSocketReader.parse("COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME"))
     }
 
     func testIdentityStatusAndEnabledDisconnectAreAllRequired() {

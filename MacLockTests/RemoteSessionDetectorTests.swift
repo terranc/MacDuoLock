@@ -381,6 +381,24 @@ final class RemoteSessionDetectorTests: XCTestCase {
         XCTAssertFalse(detector.isActive)
     }
 
+    func testUnlockPreparationLogsCurrentProbeDetail() {
+        var probes = 0
+        detector = LiveRemoteSessionDetector(readProbe: {
+            probes += 1
+            return RemoteSessionProbe(
+                status: .unavailable,
+                detail: "ax=complete windows=0 hosts=com.netease.uuremote.server#13424=tcp:443E captured=nil vnc=local"
+            )
+        }, clock: clock, sourceAvailable: { [unowned self] source in
+            self.checkedSources.append(source)
+            return self.sourceIsAvailable
+        })
+        detector.prepare(for: .screenLocked)
+        detector.prepare(for: .screenUnlocked)
+        XCTAssertGreaterThanOrEqual(probes, 2)
+        XCTAssertFalse(detector.isActive)
+    }
+
     func testUnavailableStatusNeverCreatesRemoteEvidence() {
         detector.prepare(for: .screenLocked)
         clock.advance(90)
