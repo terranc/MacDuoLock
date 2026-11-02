@@ -2,6 +2,12 @@
 
 记录 MacDuoLock 的用户可见变更，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/) 格式。
 
+## [0.7.5] - 2026-11-03
+
+### Fixed
+
+- 修复 UU 连到本机代理等出站端口时被误判为正在被控，密码页随之反复出现和消失的问题。只有被控会话打开的 UDP 或 TCP 监听才跳过锁屏。
+
 ## [0.7.4] - 2026-11-02
 
 ### Fixed
