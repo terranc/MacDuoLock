@@ -64,7 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         remote.onChange = { [weak self] _ in
             guard let self else { return }
             // Refresh lock/console state before reacting to a connection change.
-            self.gate.handle(.reconcile(sessionSnapshot()))
+            let snapshot = sessionSnapshot()
+            self.gate.handle(.reconcile(snapshot))
+            self.lockMonitor?.updateRemotePolling(for: .reconcile(snapshot))
             self.statusItem.refresh()
         }
         remote.start()

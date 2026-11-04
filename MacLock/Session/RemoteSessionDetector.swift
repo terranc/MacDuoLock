@@ -158,6 +158,7 @@ final class LiveRemoteSessionDetector {
     private var unavailableGraceUntil: TimeInterval?
     private var enabled = true
     private var sleeping = false
+    private(set) var isPolling = false
     private(set) var isActive = false
     var onChange: ((Bool) -> Void)?
 
@@ -180,13 +181,27 @@ final class LiveRemoteSessionDetector {
     }
 
     func start() {
-        stop()
+        setPolling(true)
         poll(snapshot: sessionSnapshot())
+    }
+
+    /// Late start, early stop: the one-second timer only runs while remote
+    /// evidence can still change a gate decision. Callers stop it as soon as
+    /// the desktop is unlocked, no shield is up, and no remote session is active.
+    func setPolling(_ active: Bool) {
+        guard enabled, active else {
+            timer?.cancel()
+            timer = nil
+            isPolling = false
+            return
+        }
+        guard timer == nil else { return }
         let timer = DispatchSource.makeTimerSource(queue: .main)
         timer.schedule(deadline: .now() + 1, repeating: 1)
         timer.setEventHandler { [weak self] in self?.poll(snapshot: sessionSnapshot()) }
         timer.resume()
         self.timer = timer
+        isPolling = true
     }
 
     func poll(snapshot: SessionSnapshot) {
@@ -200,13 +215,14 @@ final class LiveRemoteSessionDetector {
     func stop() {
         timer?.cancel()
         timer = nil
+        isPolling = false
         reset()
     }
 
     func setEnabled(_ enabled: Bool) {
         self.enabled = enabled
         reset()
-        if enabled { refresh(notify: false) }
+        if enabled { refresh(notify: false) } else { setPolling(false) }
     }
 
     func reset() {

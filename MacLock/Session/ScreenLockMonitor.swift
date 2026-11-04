@@ -100,9 +100,46 @@ final class ScreenLockMonitor: NSObject {
     }
 
     func handleSessionEvent(_ event: SessionEvent) {
-        remote?.prepare(for: event)
+        if shouldPreflightRemote(for: event) {
+            remote?.prepare(for: event)
+        }
         gate.handle(event)
+        updateRemotePolling(for: event)
         onEventHandled?()
+    }
+
+    /// A periodic reconcile must not start a probe while the desktop is idle.
+    private func shouldPreflightRemote(for event: SessionEvent) -> Bool {
+        guard let remote else { return false }
+        guard case .reconcile(let snapshot) = event else { return true }
+        guard !remote.isPolling else { return true }
+        return needsRemotePolling(for: snapshot, remote: remote)
+    }
+
+    /// Remote evidence is only useful while the screen is away, a shield is up,
+    /// or an unlock-by-remote session is still active. Otherwise stay idle.
+    private func needsRemotePolling(for snapshot: SessionSnapshot,
+                                    remote: LiveRemoteSessionDetector) -> Bool {
+        snapshot.screenLocked || !snapshot.onConsole || overlay.isPresented || remote.isActive
+    }
+
+    func updateRemotePolling(for event: SessionEvent) {
+        guard let remote else { return }
+        let snapshot: SessionSnapshot
+        switch event {
+        case .didLaunch(let snap), .didWake(let snap), .reconcile(let snap):
+            snapshot = snap
+        case .screenLocked:
+            snapshot = SessionSnapshot(screenLocked: true, onConsole: true)
+        case .screenUnlocked:
+            snapshot = SessionSnapshot(screenLocked: false, onConsole: true)
+        case .willSleep:
+            remote.setPolling(false)
+            return
+        default:
+            return
+        }
+        remote.setPolling(needsRemotePolling(for: snapshot, remote: remote))
     }
 
     func uninstall() {
