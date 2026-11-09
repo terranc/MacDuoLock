@@ -108,6 +108,12 @@ final class OverlayWindowManager: OverlayCommanding {
     }
 
     func dismissSync() {
+        // The five-second reconcile sends dismissSync even when no shield was
+        // raised; skip the teardown so presentation options are not reset (and
+        // logged) on every tick.
+        if !isPresented, windows.isEmpty, savedActivationPolicy == nil, !didSavePresentationOptions {
+            return
+        }
         dismissSyncCount += 1
         MacLockLog.file("overlay dismissSync count=\(dismissSyncCount)")
         tearDownWindows()

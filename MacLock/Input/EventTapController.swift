@@ -20,13 +20,25 @@ final class EventTapController: TapCommanding {
     /// When false the tap only intercepts the toggle chord (desktop / wait-T).
     private var swallowEscapes = false
 
+    /// The tap is installed once and stays live; shielding only toggles whether
+    /// Escape is swallowed. Rebuilding it on every state change (the five-second
+    /// reconcile re-applies "stop") restarted the session event tap several
+    /// times a minute and stalled input delivery.
     func startTap() {
-        swallowEscapes = true
-        scheduleTapRestart()
+        setSwallowEscapes(true)
     }
 
     func stopTap() {
-        swallowEscapes = false
+        setSwallowEscapes(false)
+    }
+
+    private func setSwallowEscapes(_ value: Bool) {
+        swallowEscapes = value
+        ensureTap()
+    }
+
+    private func ensureTap() {
+        guard tap == nil else { return }
         scheduleTapRestart()
     }
 
@@ -49,7 +61,7 @@ final class EventTapController: TapCommanding {
             NSEvent.removeMonitor(globalChordMonitor)
             self.globalChordMonitor = nil
         }
-        scheduleTapRestart()
+        ensureTap()
     }
 
     private func fireChord(via source: String) {
@@ -128,11 +140,15 @@ final class EventTapController: TapCommanding {
     }
 
     func stop() {
-        if let tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
-        }
         if let source {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+        }
+        if let tap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            // A disabled port stays registered with the window server until it
+            // is invalidated; without this, every rebuild leaves a dead tap in
+            // the session event stream.
+            CFMachPortInvalidate(tap)
         }
         tap = nil
         source = nil
@@ -142,7 +158,7 @@ final class EventTapController: TapCommanding {
     /// the user records a new chord in Settings.
     func reloadShortcut() {
         registerHotKeys()
-        scheduleTapRestart()
+        ensureTap()
     }
 
     private func registerCarbonChord() {
